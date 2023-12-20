@@ -1,0 +1,55 @@
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    background: url('bg.jpg') center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#overlay, .bio, h1, p {
+    font-family: 'Monument Extended', sans-serif;
+}
+
+@font-face {
+    font-family: 'Monument Extended';
+    src: url('MonumentExtended.otf') format('opentype');
+}
+
+.container {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 20px;
+    text-align: center;
+}
+
+.bio {
+    max-width: 600px;
+    margin: auto;
+}
+
+.profile-circle {
+    border-radius: 50%;
+    overflow: hidden;
+    width: 150px; /* Adjust the size of the circle */
+    height: 150px;
+    margin: 0 auto 20px;
+}
+
+.profile-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+h1 {
+    color: #333;
+}
+
+.social-icons img {
+    width: 30px;
+    height: 30px;
+    margin: 0 5px;
+}
