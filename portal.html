@@ -151,7 +151,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.1</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.2</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -225,7 +225,7 @@
                         <span>Base Key</span>
                         <span class="text-cyan-300/70 font-mono" id="freq-disp">C2</span>
                     </div>
-                    <!-- UPDATED: Slider uses MIDI note numbers (24=C1, 60=C4) for strictly locked steps -->
+                    <!-- Slider uses MIDI note numbers (24=C1, 60=C4) for strictly locked steps -->
                     <input type="range" id="freq-slider" min="24" max="60" step="1" value="36" class="w-full">
                 </div>
                 
@@ -285,6 +285,7 @@
             orb4: '#39ff14'  // Green - Shape/FM
         };
 
+        // Default State - Will always init to this on reload
         let STATE = {
             isPlaying: false, // Used internally to check init status mostly
             isRecording: false,
@@ -306,6 +307,7 @@
         };
 
         // --- ONBOARDING LOGIC ---
+        // Only tracking 'visited' status in localStorage now
         const onboardingPanel = document.getElementById('onboarding-panel');
         const startPanel = document.getElementById('start-panel');
         const visited = localStorage.getItem('portalVisited');
@@ -429,10 +431,7 @@
             updateScale();
             setupKeyboard();
             
-            // Check if there is saved state in localStorage first, but we prioritize the live values if user wants
-            // Actually, just load whatever is in state or localstorage
-            loadStateFromStorage();
-            
+            // Init UI with default STATE
             applyParams();
             updateBpm();
             updateDroneUI();
@@ -834,31 +833,6 @@
                 else metroBtn.classList.remove('btn-active', 'border-cyan-400', 'text-cyan-400');
             }
         }
-
-        function loadStateFromStorage() {
-            const saved = localStorage.getItem('portalState');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    STATE = { ...STATE, ...parsed };
-                    // We don't need to full apply here because initAudio calls the update functions right after
-                    document.getElementById('bpm-slider').value = STATE.bpm;
-                    
-                    // Updated: Use MIDI value logic for restore
-                    const midiValue = Tone.Frequency(STATE.baseFreq).toMidi();
-                    document.getElementById('freq-slider').value = midiValue;
-                    document.getElementById('freq-disp').innerText = Tone.Frequency(STATE.baseFreq).toNote();
-
-                    document.getElementById('glide-slider').value = STATE.portamento * 100;
-                    document.getElementById('glide-disp').innerText = STATE.portamento.toFixed(2) + 's';
-                } catch (e) { console.log("Error loading storage state"); }
-            }
-        }
-
-        // Also save to local storage on unload as a backup
-        window.addEventListener('beforeunload', () => {
-             localStorage.setItem('portalState', JSON.stringify(STATE));
-        });
 
         const bpmSlider = document.getElementById('bpm-slider');
         bpmSlider.addEventListener('input', (e) => {
