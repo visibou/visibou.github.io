@@ -156,7 +156,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.6</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.7</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -343,6 +343,9 @@
         let currentScale = []; // Array of note names
         let activeNotes = new Map(); // Key (string) -> Note playing (Poly)
         let monoStack = []; // Array of notes currently held (Mono)
+        
+        // Visuals State
+        let visualPulse = 0; // Tracks trigger intensity
 
         // SOFT CLIPPER CURVE GENERATOR
         function makeSoftClipCurve(amount) {
@@ -359,13 +362,15 @@
         }
 
         async function initAudio() {
+            // Optimization: Balanced latency to prevent crackling on slower devices
             await Tone.start();
+            Tone.context.lookAhead = 0.1; 
             
             // 1. POLY SYNTH (Default)
-            // Reduced volume for more headroom (-10dB)
+            // FIX: Reduced maxPolyphony to 4 to prevent CPU spikes
             polySynth = new Tone.PolySynth(Tone.FMSynth, {
-                maxPolyphony: 6, 
-                volume: -10, 
+                maxPolyphony: 4, 
+                volume: -10, // Headroom
                 harmonicity: 1, 
                 modulationIndex: 0, 
                 oscillator: { type: "sine" }, 
@@ -394,12 +399,11 @@
             }).toDestination();
 
             // 4. Effects Chain
-            // GENTLER CLIPPER: Curve amount reduced from 2.5 to 0.5 for transparent safety
             softClipper = new Tone.WaveShaper(makeSoftClipCurve(0.5), 4096);
             
             limiter = new Tone.Limiter(-1).toDestination();
             
-            // TRANSPARENT COMPRESSION: Higher threshold (-10dB), Lower Ratio (3:1)
+            // Adjusted Compression: Higher Threshold for cleaner quiet sounds
             compressor = new Tone.Compressor({
                 threshold: -10, 
                 ratio: 3, 
@@ -409,7 +413,7 @@
 
             softClipper.connect(limiter); 
 
-            // Reverb: JCReverb (Lighter)
+            // JCReverb is lighter on CPU
             reverb = new Tone.JCReverb({ roomSize: 0.4, wet: 0.3 }).connect(compressor);
             delay = new Tone.PingPongDelay({ delayTime: "8n", feedback: 0.2, wet: 0.2 }).connect(reverb);
             dist = new Tone.Distortion({ distortion: 0, wet: 0 }).connect(delay);
@@ -465,9 +469,7 @@
             
             updateScale();
             setupKeyboard();
-            
             loadStateFromStorage();
-            
             applyParams();
             updateBpm();
             updateDroneUI();
@@ -503,9 +505,8 @@
                 if (idx !== -1 && idx < currentScale.length) {
                     const note = currentScale[idx];
                     
-                    const canvas = document.getElementById('portal-canvas');
-                    canvas.style.boxShadow = `0 0 30px ${COLORS.orb1}40`;
-                    setTimeout(() => canvas.style.boxShadow = 'none', 100);
+                    // Trigger visual pulse variable instead of DOM manipulation
+                    visualPulse = 1.0;
 
                     if (STATE.monoMode) {
                         monoStack.push(note);
@@ -644,8 +645,7 @@
 
             const sOrb = STATE.orbs[1];
             calculateParams(sOrb);
-            // JCReverb parameter mapping is simpler than Reverb
-            reverb.roomSize.value = 0.2 + (sOrb.param1 * 0.7); // 0.2 to 0.9
+            reverb.roomSize.value = 0.2 + (sOrb.param1 * 0.7); 
             reverb.wet.value = 0.1 + (sOrb.param1 * 0.6);
 
             const dOrb = STATE.orbs[2];
@@ -876,9 +876,6 @@
             // But we can leave the function here if we want to add a "Restore Last Session" button later
         }
 
-        // Also save to local storage on unload as a backup
-        // Removed to ensure fresh start logic logic is clean
-
         const bpmSlider = document.getElementById('bpm-slider');
         bpmSlider.addEventListener('input', (e) => {
             STATE.bpm = parseInt(e.target.value);
@@ -944,8 +941,11 @@
             ctx.fillRect(0, 0, width, height);
             ctx.translate(centerX, centerY);
 
+            // PERFORMANCE: Use lighter metering or just raw values if needed
+            // visualPulse decays over time
+            visualPulse *= 0.9; 
             const level = meter ? Tone.dbToGain(meter.getValue()) : 0;
-            const pulse = 1 + (level * 0.2); 
+            const pulse = 1 + (level * 0.2) + (visualPulse * 0.1); 
 
             ctx.strokeStyle = '#1f1f1f';
             ctx.lineWidth = 1;
@@ -967,7 +967,9 @@
             ctx.beginPath();
             ctx.strokeStyle = COLORS.orb1;
             ctx.lineWidth = 2;
-            ctx.shadowBlur = 10 + (level * 20);
+            // OPTIMIZATION: ShadowBlur is expensive. Use visualPulse for color intensity instead if lagging.
+            // For now, limiting blur amount.
+            ctx.shadowBlur = 10 + (level * 10); 
             ctx.shadowColor = COLORS.orb1;
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
             ctx.stroke();
@@ -1003,8 +1005,8 @@
             ctx.beginPath();
             ctx.fillStyle = '#fff';
             ctx.shadowColor = '#fff';
-            ctx.shadowBlur = 20 + (level * 50);
-            ctx.arc(0, 0, 5 + (level * 20), 0, Math.PI * 2);
+            ctx.shadowBlur = 20 + (level * 30);
+            ctx.arc(0, 0, 5 + (level * 20) + (visualPulse * 5), 0, Math.PI * 2);
             ctx.fill();
 
             ctx.translate(-centerX, -centerY);
