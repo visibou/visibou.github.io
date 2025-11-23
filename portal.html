@@ -117,7 +117,7 @@
     <!-- Initial Overlay -->
     <div id="loading-overlay" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
         
-        <!-- Panel 1: Onboarding -->
+        <!-- Panel 1: Onboarding (Shown only on first visit or manual request) -->
         <div id="onboarding-panel" class="hidden-panel max-w-3xl w-full flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-4xl mb-2 tracking-widest text-cyan-400 glow-text">SYSTEM MANUAL</h1>
             <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-8"></div>
@@ -132,7 +132,9 @@
                             <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#00f3ff"></span> <span class="text-gray-300">TEXTURE:</span> Granular Speed & Distortion</li>
                             <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ff00ff"></span> <span class="text-gray-300">SPACE:</span> Reverb Decay & Mix</li>
                             <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ffd700"></span> <span class="text-gray-300">DELAY:</span> Echo Feedback & Timing</li>
-                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#39ff14"></span> <span class="text-gray-300">SHAPE:</span> FM Harmonicity (Musical Ratios)</li>
+                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#39ff14"></span> <span class="text-gray-300">SHAPE:</span> FM Harmonicity & Carrier</li>
+                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ff6600"></span> <span class="text-gray-300">FILTER:</span> Cutoff Freq & Resonance</li>
+                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ff3333"></span> <span class="text-gray-300">FLUX:</span> Unison Detune & Width</li>
                         </ul>
                     </div>
                 </div>
@@ -160,7 +162,7 @@
             </button>
         </div>
 
-        <!-- Panel 2: Initialize -->
+        <!-- Panel 2: Initialize (Standard Start) -->
         <div id="start-panel" class="hidden-panel flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-5xl mb-4 tracking-widest text-white glow-text">PORTAL</h1>
             <p class="text-gray-400 mb-8 font-light tracking-wider">EXPERIMENTAL AUDIO ENVIRONMENT</p>
@@ -179,7 +181,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.8</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.12</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -187,6 +189,11 @@
                 <!-- Hidden Input for File Loading -->
                 <input type="file" id="preset-input" accept=".json" class="hidden">
                 
+                <button id="random-btn" class="btn-cyber px-4 py-2 rounded text-sm uppercase tracking-wider text-gray-300 hover:text-white flex items-center gap-2" title="Randomize Orbs">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    RND
+                </button>
+
                 <button id="load-preset-btn" class="btn-cyber px-4 py-2 rounded text-sm uppercase tracking-wider text-gray-300 hover:text-white flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     Load
@@ -269,6 +276,7 @@
                         <span>Base Key</span>
                         <span class="text-cyan-300/70 font-mono" id="freq-disp">C2</span>
                     </div>
+                    <!-- Slider uses MIDI note numbers (24=C1, 60=C4) for strictly locked steps -->
                     <input type="range" id="freq-slider" min="24" max="60" step="1" value="36" class="w-full">
                 </div>
                 
@@ -278,6 +286,14 @@
                         <span id="bpm-disp">120</span>
                     </div>
                     <input type="range" id="bpm-slider" min="60" max="180" value="120" class="w-full">
+                </div>
+
+                <div class="space-y-1 pt-2 border-t border-white/5">
+                    <div class="flex justify-between text-xs uppercase tracking-widest text-gray-400">
+                        <span>Synth Gain</span>
+                        <span id="vol-disp">-10 dB</span>
+                    </div>
+                    <input type="range" id="vol-slider" min="-40" max="0" step="1" value="-10" class="w-full">
                 </div>
             </div>
             
@@ -325,7 +341,9 @@
             orb1: '#00f3ff', // Cyan - Texture
             orb2: '#ff00ff', // Magenta - Space
             orb3: '#ffd700', // Gold - Delay
-            orb4: '#39ff14'  // Green - Shape/FM
+            orb4: '#39ff14', // Green - Shape/FM
+            orb5: '#ff6600', // Orange - Filter
+            orb6: '#ff3333'  // Red - Flux
         };
 
         // Expanded Scale Definitions
@@ -339,17 +357,8 @@
         };
 
         // Musical Harmonic Ratios for FM (Consonant Snap)
-        // [Ratio, Name]
         const HARMONIC_RATIOS = [
-            0.5,  // Sub-Octave
-            1,    // Unison
-            1.5,  // Fifth
-            2,    // Octave
-            3,    // Octave + Fifth
-            4,    // 2 Octaves
-            5,    // 2 Octaves + Major Third
-            7,    // 2 Octaves + Minor Seventh (approx)
-            9     // 3 Octaves + Major Second
+            0.5, 1, 1.5, 2, 3, 4, 5, 7, 9
         ];
 
         let STATE = {
@@ -363,14 +372,20 @@
             droneEnabled: false, 
             pluckMode: false, 
             monoMode: false, 
-            arpEnabled: false, // NEW
+            arpEnabled: false,
             portamento: 0, 
+            synthVolume: -10,
             currentModType: 'sine', 
+            currentCarType: 'sine', // New state for carrier morphing
             orbs: [
-                { id: 1, x: -0.2, y: -0.2, label: 'TEXTURE', color: COLORS.orb1, param1: 0, param2: 0 }, 
-                { id: 2, x: 0.2, y: -0.2, label: 'SPACE', color: COLORS.orb2, param1: 0, param2: 0 },
-                { id: 3, x: -0.2, y: 0.2, label: 'DELAY', color: COLORS.orb3, param1: 0, param2: 0 },
-                { id: 4, x: 0.2, y: 0.2, label: 'SHAPE/FM', color: COLORS.orb4, param1: 0, param2: 0 }
+                // Left Wing
+                { id: 1, x: -0.4, y: -0.4, label: 'TEXTURE', color: COLORS.orb1, param1: 0, param2: 0 }, 
+                { id: 2, x: -0.5, y: 0,    label: 'SPACE',   color: COLORS.orb2, param1: 0, param2: 0 },
+                { id: 3, x: -0.4, y: 0.4,  label: 'DELAY',   color: COLORS.orb3, param1: 0, param2: 0 },
+                // Right Wing
+                { id: 4, x: 0.4, y: -0.4,  label: 'SHAPE/FM', color: COLORS.orb4, param1: 0, param2: 0 },
+                { id: 5, x: 0.5, y: 0,     label: 'FILTER',   color: COLORS.orb5, param1: 0, param2: 0 },
+                { id: 6, x: 0.4, y: 0.4,   label: 'FLUX',     color: COLORS.orb6, param1: 0, param2: 0 }
             ]
         };
 
@@ -398,16 +413,14 @@
 
         // --- AUDIO ENGINE (Tone.js) ---
         let polySynth, monoSynth, droneOsc, metronomeSynth, metronomeLoop, arpPattern;
-        let delay, reverb, dist, autoFilter, limiter, recorder, dest, compressor, softClipper;
+        let delay, reverb, dist, autoFilter, mainFilter, chorus, limiter, recorder, dest, compressor, softClipper;
         let metroRecordGain; 
         let meter;
         
-        // Music Theory State
         let currentScale = []; 
         let activeNotes = new Map(); 
         let monoStack = []; 
-        let arpNotes = []; // Notes held for Arpeggiator
-        
+        let arpNotes = []; 
         let visualPulse = 0;
 
         function makeSoftClipCurve(amount) {
@@ -429,7 +442,7 @@
             // 1. POLY SYNTH
             polySynth = new Tone.PolySynth(Tone.FMSynth, {
                 maxPolyphony: 4, 
-                volume: -10, 
+                volume: STATE.synthVolume, 
                 harmonicity: 1, 
                 modulationIndex: 0, 
                 oscillator: { type: "sine" }, 
@@ -440,7 +453,7 @@
 
             // 2. MONO SYNTH
             monoSynth = new Tone.FMSynth({
-                volume: -8, 
+                volume: STATE.synthVolume, // Match Poly volume
                 harmonicity: 1, 
                 modulationIndex: 0, 
                 portamento: 0, 
@@ -454,7 +467,7 @@
             droneOsc = new Tone.PulseOscillator({
                 width: 0.5,
                 frequency: STATE.baseFreq,
-                volume: STATE.droneEnabled ? -25 : -Infinity
+                volume: STATE.droneEnabled ? -30 : -Infinity
             }).toDestination();
 
             // 4. Effects Chain
@@ -471,9 +484,28 @@
             delay = new Tone.PingPongDelay({ delayTime: "8n", feedback: 0.2, wet: 0.2 }).connect(reverb);
             dist = new Tone.Distortion({ distortion: 0, wet: 0 }).connect(delay);
             autoFilter = new Tone.AutoFilter({ frequency: "8n", baseFrequency: 200, octaves: 2.6, depth: 0.5, type: "sine" }).connect(dist).start();
+            
+            // FLUX (Chorus) - Inserted here
+            chorus = new Tone.Chorus({
+                frequency: 1.5,
+                delayTime: 3.5,
+                depth: 0.7,
+                feedback: 0.1,
+                type: "sine",
+                spread: 180,
+                wet: 0
+            }).connect(autoFilter).start();
 
-            polySynth.connect(autoFilter);
-            monoSynth.connect(autoFilter);
+            // MAIN FILTER (Orange Orb)
+            mainFilter = new Tone.Filter({
+                type: "lowpass",
+                frequency: 20000,
+                Q: 1,
+                rolloff: -24
+            }).connect(chorus);
+
+            polySynth.connect(mainFilter);
+            monoSynth.connect(mainFilter);
             droneOsc.connect(limiter); 
 
             // 5. Metronome
@@ -491,25 +523,19 @@
                 }
             }, "4n");
 
-            // 6. Arpeggiator Pattern
-            // Initialize with a dummy non-empty array to satisfy Tone.js requirement
-            // Values will be updated dynamically
+            // 6. Arpeggiator
             arpPattern = new Tone.Pattern((time, note) => {
-                // Only trigger if arp is enabled and note is valid (not null)
                 if (STATE.arpEnabled && note !== null) {
-                    // Trigger visual
                     visualPulse = 1.0;
-                    // Arps play as short bursts
                     polySynth.triggerAttackRelease(note, "8n", time);
                 }
-            }, [null], "upDown"); // Start with [null] so it has length 1
+            }, [null], "upDown");
             arpPattern.interval = "8n";
             arpPattern.start(0);
 
-            // 7. Recorder setup
+            // 7. Recorder
             dest = Tone.context.createMediaStreamDestination();
             limiter.connect(dest);
-            
             metroRecordGain = new Tone.Gain(0); 
             metronomeSynth.connect(metroRecordGain);
             metroRecordGain.connect(dest);
@@ -536,8 +562,6 @@
             updateScale();
             setupKeyboard();
             
-            // Do NOT load previous state automatically, fresh start requested
-            
             applyParams();
             updateBpm();
             updateDroneUI();
@@ -547,7 +571,7 @@
             updateArpUI();
         }
         
-        // --- MUSIC THEORY LOGIC ---
+        // --- LOGIC ---
         
         function updateScale() {
             const root = Tone.Frequency(STATE.baseFreq).toNote();
@@ -578,25 +602,19 @@
                 
                 if (idx !== -1 && idx < currentScale.length) {
                     const note = currentScale[idx];
-                    
-                    // Visual Feedback
                     const canvas = document.getElementById('portal-canvas');
                     canvas.style.boxShadow = `0 0 30px ${COLORS.orb1}40`;
                     setTimeout(() => canvas.style.boxShadow = 'none', 100);
 
                     if (STATE.arpEnabled) {
-                        // Arp Mode: Add to list, let Pattern play it
                         if (!arpNotes.includes(note)) {
                             arpNotes.push(note);
-                            // Sort to ensure upDown pattern works musically
                             arpNotes.sort((a, b) => Tone.Frequency(a).toMidi() - Tone.Frequency(b).toMidi());
-                            // Ensure pattern values is never empty to avoid Tone.js error
                             arpPattern.values = arpNotes.length > 0 ? arpNotes : [null];
                         }
-                        return; // Don't trigger synths directly
+                        return;
                     }
 
-                    // Normal Playing Logic
                     visualPulse = 1.0;
                     if (STATE.monoMode) {
                         monoStack.push(note);
@@ -626,12 +644,9 @@
                     const note = currentScale[idx];
 
                     if (STATE.arpEnabled) {
-                        // Arp Mode: Remove from list
                         const arpIdx = arpNotes.indexOf(note);
                         if (arpIdx > -1) {
                             arpNotes.splice(arpIdx, 1);
-                            // Ensure pattern values is never empty to avoid Tone.js error
-                            // If empty, fallback to [null] which loop ignores
                             arpPattern.values = arpNotes.length > 0 ? arpNotes : [null];
                         }
                         return;
@@ -731,13 +746,13 @@
             const d = Math.min(Math.sqrt(orb.x*orb.x + orb.y*orb.y), 1); 
             const angle = Math.atan2(orb.y, orb.x);
             orb.param1 = d; 
-            orb.param2 = (angle + Math.PI) / (2 * Math.PI); // 0 to 1
+            orb.param2 = (angle + Math.PI) / (2 * Math.PI); 
         }
 
         function applyParams() {
             if (!polySynth) return;
             
-            // 1. CYAN Orb: TEXTURE (AutoFilter & Distortion)
+            // 1. CYAN Orb: TEXTURE
             const tOrb = STATE.orbs[0];
             calculateParams(tOrb);
             const bps = STATE.bpm / 60;
@@ -747,7 +762,7 @@
             dist.distortion = tOrb.param1 * 0.3;
             dist.wet.value = tOrb.param1 * 0.5;
 
-            // 2. MAGENTA Orb: SPACE (Reverb)
+            // 2. MAGENTA Orb: SPACE
             const sOrb = STATE.orbs[1];
             calculateParams(sOrb);
             reverb.roomSize.value = 0.2 + (sOrb.param1 * 0.7); 
@@ -766,33 +781,54 @@
             delay.feedback.value = Math.min(dOrb.param1 * 0.7, 0.9); 
             delay.wet.value = dOrb.param1 * 0.6;
 
-            // 4. GREEN Orb: SHAPE/FM (Re-Thought)
-            // param2 (Angle) -> Snap to Musical Harmonic Ratios
-            // param1 (Distance) -> FM Depth (Index)
+            // 4. GREEN Orb: SHAPE/FM
             const shOrb = STATE.orbs[3];
             calculateParams(shOrb);
-            
-            // Map Angle 0-1 to index in HARMONIC_RATIOS array
             const ratioIdx = Math.floor(shOrb.param2 * (HARMONIC_RATIOS.length - 0.01));
             const harmonicity = HARMONIC_RATIOS[ratioIdx];
-            
-            // Map Distance 0-1 to Modulation Index (0 to 20 is a good musical range)
             const modIndex = shOrb.param1 * 20;
-            
             polySynth.set({ harmonicity: harmonicity, modulationIndex: modIndex });
             monoSynth.set({ harmonicity: harmonicity, modulationIndex: modIndex });
 
-            // FM Modulator Waveform: Still morphs by quadrant for flavor
-            let modType = 'sine';
-            if (shOrb.param2 > 0.25 && shOrb.param2 <= 0.5) modType = 'triangle';
-            else if (shOrb.param2 > 0.5 && shOrb.param2 <= 0.75) modType = 'sawtooth';
-            else if (shOrb.param2 > 0.75) modType = 'square';
+            let wfType = 'sine';
+            if (shOrb.param2 > 0.25 && shOrb.param2 <= 0.5) wfType = 'triangle';
+            else if (shOrb.param2 > 0.5 && shOrb.param2 <= 0.75) wfType = 'sawtooth';
+            else if (shOrb.param2 > 0.75) wfType = 'square';
 
-            if (modType !== STATE.currentModType) {
-                polySynth.set({ modulation: { type: modType } });
-                monoSynth.set({ modulation: { type: modType } });
-                STATE.currentModType = modType;
+            if (wfType !== STATE.currentModType) {
+                polySynth.set({ 
+                    modulation: { type: wfType },
+                    oscillator: { type: wfType } 
+                });
+                monoSynth.set({ 
+                    modulation: { type: wfType },
+                    oscillator: { type: wfType }
+                });
+                STATE.currentModType = wfType;
             }
+
+            // 5. ORANGE Orb: FILTER
+            const fOrb = STATE.orbs[4];
+            calculateParams(fOrb);
+            // Distance = Cutoff (0 = 100Hz, 1 = 20000Hz)
+            // Use exponential ramp for filter frequency
+            const cutoff = 100 + Math.pow(fOrb.param1, 2) * 19900; 
+            mainFilter.frequency.rampTo(cutoff, 0.1);
+            // Angle = Resonance (Q)
+            // Map 0-1 to 0-20
+            mainFilter.Q.value = fOrb.param2 * 20;
+
+            // 6. RED Orb: FLUX (Chorus)
+            const fluxOrb = STATE.orbs[5];
+            calculateParams(fluxOrb);
+            // Distance = Depth/Mix/Wetness
+            // Angle = Frequency/Speed
+            const fluxSpeed = 0.1 + (fluxOrb.param2 * 10); // 0.1Hz to 10Hz
+            chorus.frequency.value = fluxSpeed;
+            // chorus wetness max 1
+            chorus.wet.value = fluxOrb.param1;
+            // also map depth to distance slightly
+            chorus.depth = 0.5 + (fluxOrb.param1 * 0.5);
         }
 
         document.getElementById('init-btn').addEventListener('click', async () => {
@@ -816,7 +852,7 @@
             STATE.droneEnabled = !STATE.droneEnabled;
             updateDroneUI();
             if (droneOsc) {
-                const targetVol = STATE.droneEnabled ? -25 : -Infinity;
+                const targetVol = STATE.droneEnabled ? -30 : -Infinity;
                 droneOsc.volume.rampTo(targetVol, 0.2);
             }
         });
@@ -838,7 +874,6 @@
         document.getElementById('arp-toggle-btn').addEventListener('click', () => {
             STATE.arpEnabled = !STATE.arpEnabled;
             updateArpUI();
-            // Clear stuck notes
             if(polySynth) polySynth.releaseAll();
             arpNotes = [];
         });
@@ -849,6 +884,14 @@
             STATE.portamento = val;
             document.getElementById('glide-disp').innerText = val.toFixed(2) + 's';
             if(monoSynth) monoSynth.portamento = val;
+        });
+
+        const volSlider = document.getElementById('vol-slider');
+        volSlider.addEventListener('input', (e) => {
+            STATE.synthVolume = parseInt(e.target.value);
+            document.getElementById('vol-disp').innerText = STATE.synthVolume + ' dB';
+            if(polySynth) polySynth.volume.value = STATE.synthVolume;
+            if(monoSynth) monoSynth.volume.value = STATE.synthVolume;
         });
 
         function updateDroneUI() {
@@ -920,7 +963,18 @@
             }
         }
 
-        // --- SAVE / LOAD PRESETS ---
+        // --- RANDOMIZE & PRESETS ---
+
+        document.getElementById('random-btn').addEventListener('click', () => {
+            STATE.orbs.forEach(orb => {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random(); 
+                orb.x = Math.cos(angle) * dist;
+                orb.y = Math.sin(angle) * dist;
+                calculateParams(orb);
+            });
+            applyParams();
+        });
 
         document.getElementById('save-preset-btn').addEventListener('click', () => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(STATE));
@@ -963,6 +1017,8 @@
             
             document.getElementById('bpm-slider').value = STATE.bpm;
             document.getElementById('scale-select').value = STATE.scale || 'major';
+            document.getElementById('vol-slider').value = STATE.synthVolume;
+            document.getElementById('vol-disp').innerText = STATE.synthVolume + ' dB';
             
             const midiValue = Tone.Frequency(STATE.baseFreq).toMidi();
             document.getElementById('freq-slider').value = midiValue;
@@ -978,9 +1034,12 @@
                 if(droneOsc) droneOsc.frequency.rampTo(STATE.baseFreq, 0.1);
                 if(monoSynth) monoSynth.portamento = STATE.portamento;
                 
+                if(polySynth) polySynth.volume.value = STATE.synthVolume;
+                if(monoSynth) monoSynth.volume.value = STATE.synthVolume;
+                
                 updateDroneUI();
                 if(droneOsc) {
-                     const targetVol = STATE.droneEnabled ? -25 : -Infinity;
+                     const targetVol = STATE.droneEnabled ? -30 : -Infinity;
                      droneOsc.volume.rampTo(targetVol, 0.2);
                 }
                 
@@ -1024,38 +1083,6 @@
             if(droneOsc) droneOsc.frequency.rampTo(STATE.baseFreq, 0.1);
             updateScale();
         });
-
-        document.getElementById('export-btn').addEventListener('click', () => {
-            if (!recorder) return;
-
-            const btn = document.getElementById('export-btn');
-            const status = document.getElementById('rec-status');
-
-            if (!STATE.isRecording) {
-                recorder.start();
-                STATE.isRecording = true;
-                
-                btn.innerText = "STOP RECORDING";
-                btn.classList.add('border-red-500', 'text-red-500', 'hover:bg-red-500/10');
-                btn.classList.remove('border-l-cyan-500', 'text-white');
-                btn.style.borderLeftColor = '#ef4444';
-                
-                status.style.opacity = 1;
-                status.classList.add('animate-pulse');
-            } else {
-                recorder.stop();
-                STATE.isRecording = false;
-                
-                btn.innerText = "RECORD AUDIO";
-                btn.classList.remove('border-red-500', 'text-red-500', 'hover:bg-red-500/10');
-                btn.classList.add('border-l-cyan-500', 'text-white');
-                btn.style.borderLeftColor = '';
-                
-                status.style.opacity = 0; 
-                status.classList.remove('animate-pulse');
-            }
-        });
-
 
         function draw() {
             requestAnimationFrame(draw);
