@@ -47,6 +47,29 @@
             outline: none;
         }
 
+        /* Select Styling */
+        select {
+            appearance: none;
+            background-color: transparent;
+            border: none;
+            color: #00f3ff;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            text-align: right;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            outline: none;
+        }
+        select:hover {
+            color: #fff;
+        }
+        select option {
+            background-color: #050505;
+            color: #e0e0e0;
+        }
+
         /* Glow Effects */
         .glow-text {
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
@@ -94,7 +117,7 @@
     <!-- Initial Overlay -->
     <div id="loading-overlay" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
         
-        <!-- Panel 1: Onboarding (Shown only on first visit or manual request) -->
+        <!-- Panel 1: Onboarding -->
         <div id="onboarding-panel" class="hidden-panel max-w-3xl w-full flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-4xl mb-2 tracking-widest text-cyan-400 glow-text">SYSTEM MANUAL</h1>
             <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-8"></div>
@@ -106,10 +129,10 @@
                         <h3 class="text-white font-display tracking-wider mb-2 border-b border-white/10 pb-1">● ORB CONTROLS</h3>
                         <p class="mb-2 text-xs leading-relaxed">Drag the nodes to mutate the synthesis engine.</p>
                         <ul class="space-y-2 text-xs">
-                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#00f3ff"></span> <span class="text-gray-300">TEXTURE:</span> Grit & Granular Speed</li>
+                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#00f3ff"></span> <span class="text-gray-300">TEXTURE:</span> Granular Speed & Distortion</li>
                             <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ff00ff"></span> <span class="text-gray-300">SPACE:</span> Reverb Decay & Mix</li>
                             <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#ffd700"></span> <span class="text-gray-300">DELAY:</span> Echo Feedback & Timing</li>
-                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#39ff14"></span> <span class="text-gray-300">SHAPE:</span> FM Matrix & Waveform</li>
+                            <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#39ff14"></span> <span class="text-gray-300">SHAPE:</span> FM Harmonicity (Musical Ratios)</li>
                         </ul>
                     </div>
                 </div>
@@ -121,8 +144,8 @@
                         <ul class="space-y-2 text-xs">
                             <li><strong class="text-white">[1 - 9, 0]</strong> : Trigger Notes (Scale Locked)</li>
                             <li><strong class="text-white">DRONE</strong> : Toggle Bass Foundation</li>
+                            <li><strong class="text-white">ARP</strong> : Toggle Arpeggiator Sequence</li>
                             <li><strong class="text-white">PLUCK</strong> : Switch Sustain / Percussive Mode</li>
-                             <li><strong class="text-white">MONO/GLIDE</strong> : Portamento Lead Mode</li>
                             <li><strong class="text-white">REC</strong> : Capture High-Res Audio (.webm)</li>
                         </ul>
                     </div>
@@ -137,7 +160,7 @@
             </button>
         </div>
 
-        <!-- Panel 2: Initialize (Standard Start) -->
+        <!-- Panel 2: Initialize -->
         <div id="start-panel" class="hidden-panel flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-5xl mb-4 tracking-widest text-white glow-text">PORTAL</h1>
             <p class="text-gray-400 mb-8 font-light tracking-wider">EXPERIMENTAL AUDIO ENVIRONMENT</p>
@@ -156,7 +179,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.7</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.8</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -171,7 +194,7 @@
                 
                 <button id="save-preset-btn" class="btn-cyber px-4 py-2 rounded text-sm uppercase tracking-wider text-gray-300 hover:text-white flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Save Preset
+                    Save
                 </button>
             </div>
             
@@ -201,15 +224,18 @@
                 </div>
                 
                 <!-- Toggles Row -->
-                <div class="flex gap-2 justify-between">
-                    <button id="pluck-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="pluck-toggle-btn" class="text-[10px] py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
                         Pluck
                     </button>
-                    <button id="drone-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
+                    <button id="drone-toggle-btn" class="text-[10px] py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
                         Drone
                     </button>
-                    <button id="mono-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
+                    <button id="mono-toggle-btn" class="text-[10px] py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
                         Mono
+                    </button>
+                    <button id="arp-toggle-btn" class="text-[10px] py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
+                        Arp
                     </button>
                 </div>
 
@@ -225,12 +251,24 @@
             
             <!-- Freq / BPM Group -->
             <div class="control-group space-y-2">
-                <div class="space-y-1">
+                <!-- Scale Selector -->
+                <div class="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span class="text-xs uppercase tracking-widest text-cyan-400">Scale</span>
+                    <select id="scale-select">
+                        <option value="major">Major</option>
+                        <option value="minor">Minor</option>
+                        <option value="dorian">Dorian</option>
+                        <option value="pentatonic">Pentatonic</option>
+                        <option value="hirajoshi">Hirajoshi</option>
+                        <option value="wholetone">Whole Tone</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1 pt-1">
                      <div class="flex justify-between text-xs uppercase tracking-widest text-cyan-400">
                         <span>Base Key</span>
                         <span class="text-cyan-300/70 font-mono" id="freq-disp">C2</span>
                     </div>
-                    <!-- Slider uses MIDI note numbers (24=C1, 60=C4) for strictly locked steps -->
                     <input type="range" id="freq-slider" min="24" max="60" step="1" value="36" class="w-full">
                 </div>
                 
@@ -290,17 +328,42 @@
             orb4: '#39ff14'  // Green - Shape/FM
         };
 
-        // Default State - Will always init to this on reload
+        // Expanded Scale Definitions
+        const SCALES = {
+            major: [0, 2, 4, 5, 7, 9, 11],
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            dorian: [0, 2, 3, 5, 7, 9, 10],
+            pentatonic: [0, 2, 4, 7, 9],
+            hirajoshi: [0, 2, 3, 7, 8],
+            wholetone: [0, 2, 4, 6, 8, 10]
+        };
+
+        // Musical Harmonic Ratios for FM (Consonant Snap)
+        // [Ratio, Name]
+        const HARMONIC_RATIOS = [
+            0.5,  // Sub-Octave
+            1,    // Unison
+            1.5,  // Fifth
+            2,    // Octave
+            3,    // Octave + Fifth
+            4,    // 2 Octaves
+            5,    // 2 Octaves + Major Third
+            7,    // 2 Octaves + Minor Seventh (approx)
+            9     // 3 Octaves + Major Second
+        ];
+
         let STATE = {
             isPlaying: false, 
             isRecording: false,
             recordMetronome: false,
             bpm: 120,
-            baseFreq: 65.41, // C2 Default (MIDI 36)
+            baseFreq: 65.41, // C2 Default
+            scale: 'major',
             metronome: false,
-            droneEnabled: false, // Defaulted to OFF
+            droneEnabled: false, 
             pluckMode: false, 
             monoMode: false, 
+            arpEnabled: false, // NEW
             portamento: 0, 
             currentModType: 'sine', 
             orbs: [
@@ -334,20 +397,19 @@
         });
 
         // --- AUDIO ENGINE (Tone.js) ---
-        let polySynth, monoSynth, droneOsc, metronomeSynth, metronomeLoop;
+        let polySynth, monoSynth, droneOsc, metronomeSynth, metronomeLoop, arpPattern;
         let delay, reverb, dist, autoFilter, limiter, recorder, dest, compressor, softClipper;
         let metroRecordGain; 
         let meter;
         
         // Music Theory State
-        let currentScale = []; // Array of note names
-        let activeNotes = new Map(); // Key (string) -> Note playing (Poly)
-        let monoStack = []; // Array of notes currently held (Mono)
+        let currentScale = []; 
+        let activeNotes = new Map(); 
+        let monoStack = []; 
+        let arpNotes = []; // Notes held for Arpeggiator
         
-        // Visuals State
-        let visualPulse = 0; // Tracks trigger intensity
+        let visualPulse = 0;
 
-        // SOFT CLIPPER CURVE GENERATOR
         function makeSoftClipCurve(amount) {
             const k = typeof amount === 'number' ? amount : 50;
             const n_samples = 44100;
@@ -355,22 +417,19 @@
             const deg = Math.PI / 180;
             for (let i = 0; i < n_samples; ++i) {
                 let x = i * 2 / n_samples - 1;
-                // Soft clip curve function
                 curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x)); 
             }
             return curve;
         }
 
         async function initAudio() {
-            // Optimization: Balanced latency to prevent crackling on slower devices
             await Tone.start();
             Tone.context.lookAhead = 0.1; 
             
-            // 1. POLY SYNTH (Default)
-            // FIX: Reduced maxPolyphony to 4 to prevent CPU spikes
+            // 1. POLY SYNTH
             polySynth = new Tone.PolySynth(Tone.FMSynth, {
                 maxPolyphony: 4, 
-                volume: -10, // Headroom
+                volume: -10, 
                 harmonicity: 1, 
                 modulationIndex: 0, 
                 oscillator: { type: "sine" }, 
@@ -379,7 +438,7 @@
                 modulationEnvelope: { attack: 0.1, decay: 0.2, sustain: 1, release: 0.5 }
             });
 
-            // 2. MONO SYNTH (For Portamento)
+            // 2. MONO SYNTH
             monoSynth = new Tone.FMSynth({
                 volume: -8, 
                 harmonicity: 1, 
@@ -392,34 +451,27 @@
             });
             
             // 3. Drone Oscillator
-            droneOsc = new Tone.Oscillator({
-                type: "sine",
+            droneOsc = new Tone.PulseOscillator({
+                width: 0.5,
                 frequency: STATE.baseFreq,
-                volume: STATE.droneEnabled ? -20 : -Infinity
+                volume: STATE.droneEnabled ? -25 : -Infinity
             }).toDestination();
 
             // 4. Effects Chain
             softClipper = new Tone.WaveShaper(makeSoftClipCurve(0.5), 4096);
-            
             limiter = new Tone.Limiter(-1).toDestination();
             
-            // Adjusted Compression: Higher Threshold for cleaner quiet sounds
             compressor = new Tone.Compressor({
-                threshold: -10, 
-                ratio: 3, 
-                attack: 0.01, 
-                release: 0.1
+                threshold: -10, ratio: 3, attack: 0.01, release: 0.1
             }).connect(softClipper); 
 
             softClipper.connect(limiter); 
 
-            // JCReverb is lighter on CPU
             reverb = new Tone.JCReverb({ roomSize: 0.4, wet: 0.3 }).connect(compressor);
             delay = new Tone.PingPongDelay({ delayTime: "8n", feedback: 0.2, wet: 0.2 }).connect(reverb);
             dist = new Tone.Distortion({ distortion: 0, wet: 0 }).connect(delay);
             autoFilter = new Tone.AutoFilter({ frequency: "8n", baseFrequency: 200, octaves: 2.6, depth: 0.5, type: "sine" }).connect(dist).start();
 
-            // Routing
             polySynth.connect(autoFilter);
             monoSynth.connect(autoFilter);
             droneOsc.connect(limiter); 
@@ -439,7 +491,22 @@
                 }
             }, "4n");
 
-            // 6. Recorder setup
+            // 6. Arpeggiator Pattern
+            // Initialize with a dummy non-empty array to satisfy Tone.js requirement
+            // Values will be updated dynamically
+            arpPattern = new Tone.Pattern((time, note) => {
+                // Only trigger if arp is enabled and note is valid (not null)
+                if (STATE.arpEnabled && note !== null) {
+                    // Trigger visual
+                    visualPulse = 1.0;
+                    // Arps play as short bursts
+                    polySynth.triggerAttackRelease(note, "8n", time);
+                }
+            }, [null], "upDown"); // Start with [null] so it has length 1
+            arpPattern.interval = "8n";
+            arpPattern.start(0);
+
+            // 7. Recorder setup
             dest = Tone.context.createMediaStreamDestination();
             limiter.connect(dest);
             
@@ -462,27 +529,29 @@
             meter = new Tone.Meter();
             limiter.connect(meter);
             
-            // Start Transport & Drone immediately on init
             Tone.Transport.start();
             droneOsc.start();
             metronomeLoop.start(0);
             
             updateScale();
             setupKeyboard();
-            loadStateFromStorage();
+            
+            // Do NOT load previous state automatically, fresh start requested
+            
             applyParams();
             updateBpm();
             updateDroneUI();
             updateMetroRecUI();
             updatePluckUI();
             updateMonoUI();
+            updateArpUI();
         }
         
         // --- MUSIC THEORY LOGIC ---
         
         function updateScale() {
             const root = Tone.Frequency(STATE.baseFreq).toNote();
-            const intervals = [0, 2, 4, 5, 7, 9, 11];
+            const intervals = SCALES[STATE.scale] || SCALES.major;
             currentScale = [];
             const baseNoteNum = Tone.Frequency(root).toMidi() + 24; 
             
@@ -492,6 +561,11 @@
                 });
             }
         }
+
+        document.getElementById('scale-select').addEventListener('change', (e) => {
+            STATE.scale = e.target.value;
+            updateScale();
+        });
         
         function setupKeyboard() {
             window.addEventListener('keydown', e => {
@@ -505,9 +579,25 @@
                 if (idx !== -1 && idx < currentScale.length) {
                     const note = currentScale[idx];
                     
-                    // Trigger visual pulse variable instead of DOM manipulation
-                    visualPulse = 1.0;
+                    // Visual Feedback
+                    const canvas = document.getElementById('portal-canvas');
+                    canvas.style.boxShadow = `0 0 30px ${COLORS.orb1}40`;
+                    setTimeout(() => canvas.style.boxShadow = 'none', 100);
 
+                    if (STATE.arpEnabled) {
+                        // Arp Mode: Add to list, let Pattern play it
+                        if (!arpNotes.includes(note)) {
+                            arpNotes.push(note);
+                            // Sort to ensure upDown pattern works musically
+                            arpNotes.sort((a, b) => Tone.Frequency(a).toMidi() - Tone.Frequency(b).toMidi());
+                            // Ensure pattern values is never empty to avoid Tone.js error
+                            arpPattern.values = arpNotes.length > 0 ? arpNotes : [null];
+                        }
+                        return; // Don't trigger synths directly
+                    }
+
+                    // Normal Playing Logic
+                    visualPulse = 1.0;
                     if (STATE.monoMode) {
                         monoStack.push(note);
                         if (STATE.pluckMode) {
@@ -533,8 +623,21 @@
                 const idx = keyMap.indexOf(key);
 
                 if (idx !== -1) {
+                    const note = currentScale[idx];
+
+                    if (STATE.arpEnabled) {
+                        // Arp Mode: Remove from list
+                        const arpIdx = arpNotes.indexOf(note);
+                        if (arpIdx > -1) {
+                            arpNotes.splice(arpIdx, 1);
+                            // Ensure pattern values is never empty to avoid Tone.js error
+                            // If empty, fallback to [null] which loop ignores
+                            arpPattern.values = arpNotes.length > 0 ? arpNotes : [null];
+                        }
+                        return;
+                    }
+
                     if (STATE.monoMode) {
-                        const note = currentScale[idx];
                         const stackIdx = monoStack.indexOf(note);
                         if (stackIdx > -1) monoStack.splice(stackIdx, 1);
                         
@@ -547,8 +650,8 @@
 
                     } else {
                         if (activeNotes.has(key)) {
-                            const note = activeNotes.get(key);
-                            polySynth.triggerRelease(note);
+                            const n = activeNotes.get(key);
+                            polySynth.triggerRelease(n);
                             activeNotes.delete(key);
                         }
                     }
@@ -634,6 +737,7 @@
         function applyParams() {
             if (!polySynth) return;
             
+            // 1. CYAN Orb: TEXTURE (AutoFilter & Distortion)
             const tOrb = STATE.orbs[0];
             calculateParams(tOrb);
             const bps = STATE.bpm / 60;
@@ -643,11 +747,13 @@
             dist.distortion = tOrb.param1 * 0.3;
             dist.wet.value = tOrb.param1 * 0.5;
 
+            // 2. MAGENTA Orb: SPACE (Reverb)
             const sOrb = STATE.orbs[1];
             calculateParams(sOrb);
             reverb.roomSize.value = 0.2 + (sOrb.param1 * 0.7); 
             reverb.wet.value = 0.1 + (sOrb.param1 * 0.6);
 
+            // 3. GOLD Orb: DELAY
             const dOrb = STATE.orbs[2];
             calculateParams(dOrb);
             let dTime = "8n";
@@ -660,15 +766,23 @@
             delay.feedback.value = Math.min(dOrb.param1 * 0.7, 0.9); 
             delay.wet.value = dOrb.param1 * 0.6;
 
+            // 4. GREEN Orb: SHAPE/FM (Re-Thought)
+            // param2 (Angle) -> Snap to Musical Harmonic Ratios
+            // param1 (Distance) -> FM Depth (Index)
             const shOrb = STATE.orbs[3];
             calculateParams(shOrb);
             
-            const harmonics = 0.5 + (shOrb.param2 * 14.5); 
-            const modIndex = shOrb.param1 * 50;
+            // Map Angle 0-1 to index in HARMONIC_RATIOS array
+            const ratioIdx = Math.floor(shOrb.param2 * (HARMONIC_RATIOS.length - 0.01));
+            const harmonicity = HARMONIC_RATIOS[ratioIdx];
             
-            polySynth.set({ harmonicity: harmonics, modulationIndex: modIndex });
-            monoSynth.set({ harmonicity: harmonics, modulationIndex: modIndex });
+            // Map Distance 0-1 to Modulation Index (0 to 20 is a good musical range)
+            const modIndex = shOrb.param1 * 20;
+            
+            polySynth.set({ harmonicity: harmonicity, modulationIndex: modIndex });
+            monoSynth.set({ harmonicity: harmonicity, modulationIndex: modIndex });
 
+            // FM Modulator Waveform: Still morphs by quadrant for flavor
             let modType = 'sine';
             if (shOrb.param2 > 0.25 && shOrb.param2 <= 0.5) modType = 'triangle';
             else if (shOrb.param2 > 0.5 && shOrb.param2 <= 0.75) modType = 'sawtooth';
@@ -702,7 +816,7 @@
             STATE.droneEnabled = !STATE.droneEnabled;
             updateDroneUI();
             if (droneOsc) {
-                const targetVol = STATE.droneEnabled ? -20 : -Infinity;
+                const targetVol = STATE.droneEnabled ? -25 : -Infinity;
                 droneOsc.volume.rampTo(targetVol, 0.2);
             }
         });
@@ -719,6 +833,14 @@
             if(monoSynth) monoSynth.triggerRelease();
             activeNotes.clear();
             monoStack = [];
+        });
+        
+        document.getElementById('arp-toggle-btn').addEventListener('click', () => {
+            STATE.arpEnabled = !STATE.arpEnabled;
+            updateArpUI();
+            // Clear stuck notes
+            if(polySynth) polySynth.releaseAll();
+            arpNotes = [];
         });
 
         const glideSlider = document.getElementById('glide-slider');
@@ -766,6 +888,17 @@
             }
         }
         
+        function updateArpUI() {
+            const btn = document.getElementById('arp-toggle-btn');
+            if (STATE.arpEnabled) {
+                btn.classList.add('btn-active', 'border-cyan-500/50');
+                btn.classList.remove('text-gray-500', 'border-gray-700');
+            } else {
+                btn.classList.remove('btn-active', 'border-cyan-500/50');
+                btn.classList.add('text-gray-500', 'border-gray-700');
+            }
+        }
+        
         document.getElementById('metro-rec-toggle').addEventListener('click', () => {
             STATE.recordMetronome = !STATE.recordMetronome;
             updateMetroRecUI();
@@ -789,30 +922,25 @@
 
         // --- SAVE / LOAD PRESETS ---
 
-        // Save Preset (Download JSON)
         document.getElementById('save-preset-btn').addEventListener('click', () => {
-            // Convert State to JSON string
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(STATE));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
             downloadAnchorNode.setAttribute("download", "portal_preset_" + Date.now() + ".json");
-            document.body.appendChild(downloadAnchorNode); // required for firefox
+            document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
             
-            // Flash effect on button
             const btn = document.getElementById('save-preset-btn');
             const ogText = btn.innerText;
             btn.innerText = "SAVED!";
             setTimeout(() => btn.innerText = ogText, 1000);
         });
 
-        // Load Preset (Trigger Input)
         document.getElementById('load-preset-btn').addEventListener('click', () => {
             document.getElementById('preset-input').click();
         });
 
-        // Handle File Input
         document.getElementById('preset-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -827,17 +955,15 @@
                 }
             };
             reader.readAsText(file);
-            e.target.value = ''; // Reset so same file can be loaded again
+            e.target.value = '';
         });
 
         function applyLoadedState(loaded) {
-            // Merge loaded state into current STATE
             STATE = { ...STATE, ...loaded };
             
-            // Update UI Elements
             document.getElementById('bpm-slider').value = STATE.bpm;
+            document.getElementById('scale-select').value = STATE.scale || 'major';
             
-            // Updated: Set slider value using MIDI note number logic
             const midiValue = Tone.Frequency(STATE.baseFreq).toMidi();
             document.getElementById('freq-slider').value = midiValue;
             document.getElementById('freq-disp').innerText = Tone.Frequency(STATE.baseFreq).toNote();
@@ -845,8 +971,7 @@
             document.getElementById('glide-slider').value = STATE.portamento * 100;
             document.getElementById('glide-disp').innerText = STATE.portamento.toFixed(2) + 's';
             
-            // Update Audio
-            if (polySynth) { // Check if audio is initialized
+            if (polySynth) { 
                 updateBpm();
                 updateScale();
                 
@@ -855,16 +980,16 @@
                 
                 updateDroneUI();
                 if(droneOsc) {
-                     const targetVol = STATE.droneEnabled ? -20 : -Infinity;
+                     const targetVol = STATE.droneEnabled ? -25 : -Infinity;
                      droneOsc.volume.rampTo(targetVol, 0.2);
                 }
                 
                 updatePluckUI();
                 updateMonoUI();
+                updateArpUI();
                 updateMetroRecUI();
-                applyParams(); // Updates effects/synths based on loaded orbs
+                applyParams();
                 
-                // Re-sync metronome toggle visual state if needed
                 const metroBtn = document.getElementById('metro-btn');
                 if(STATE.metronome) metroBtn.classList.add('btn-active', 'border-cyan-400', 'text-cyan-400');
                 else metroBtn.classList.remove('btn-active', 'border-cyan-400', 'text-cyan-400');
@@ -872,8 +997,7 @@
         }
 
         function loadStateFromStorage() {
-            // NOT loading from storage on init anymore to ensure fresh start
-            // But we can leave the function here if we want to add a "Restore Last Session" button later
+            // No auto-load
         }
 
         const bpmSlider = document.getElementById('bpm-slider');
@@ -890,7 +1014,6 @@
 
         const freqSlider = document.getElementById('freq-slider');
         freqSlider.addEventListener('input', (e) => {
-            // Updated: Value is now MIDI note number (integer)
             const midiNote = parseInt(e.target.value);
             const frequency = Tone.Frequency(midiNote, "midi").toFrequency();
             const noteName = Tone.Frequency(midiNote, "midi").toNote();
@@ -941,10 +1064,8 @@
             ctx.fillRect(0, 0, width, height);
             ctx.translate(centerX, centerY);
 
-            // PERFORMANCE: Use lighter metering or just raw values if needed
-            // visualPulse decays over time
-            visualPulse *= 0.9; 
             const level = meter ? Tone.dbToGain(meter.getValue()) : 0;
+            visualPulse *= 0.9; 
             const pulse = 1 + (level * 0.2) + (visualPulse * 0.1); 
 
             ctx.strokeStyle = '#1f1f1f';
@@ -967,8 +1088,6 @@
             ctx.beginPath();
             ctx.strokeStyle = COLORS.orb1;
             ctx.lineWidth = 2;
-            // OPTIMIZATION: ShadowBlur is expensive. Use visualPulse for color intensity instead if lagging.
-            // For now, limiting blur amount.
             ctx.shadowBlur = 10 + (level * 10); 
             ctx.shadowColor = COLORS.orb1;
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
