@@ -94,7 +94,7 @@
     <!-- Initial Overlay -->
     <div id="loading-overlay" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
         
-        <!-- Panel 1: Onboarding (Shown only on first visit) -->
+        <!-- Panel 1: Onboarding (Shown only on first visit or manual request) -->
         <div id="onboarding-panel" class="hidden-panel max-w-3xl w-full flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-4xl mb-2 tracking-widest text-cyan-400 glow-text">SYSTEM MANUAL</h1>
             <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-8"></div>
@@ -141,9 +141,14 @@
         <div id="start-panel" class="hidden-panel flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-5xl mb-4 tracking-widest text-white glow-text">PORTAL</h1>
             <p class="text-gray-400 mb-8 font-light tracking-wider">EXPERIMENTAL AUDIO ENVIRONMENT</p>
-            <button id="init-btn" class="font-display text-xl px-8 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 rounded-sm uppercase tracking-widest">
-                Initialize System
-            </button>
+            <div class="flex flex-col items-center gap-4">
+                <button id="init-btn" class="font-display text-xl px-8 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all duration-300 rounded-sm uppercase tracking-widest">
+                    Initialize System
+                </button>
+                <button id="manual-btn" class="text-xs text-gray-500 hover:text-white uppercase tracking-wider underline decoration-gray-700 hover:decoration-white transition-all">
+                    System Manual
+                </button>
+            </div>
         </div>
 
     </div>
@@ -151,7 +156,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.2</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.6</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -200,7 +205,7 @@
                     <button id="pluck-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
                         Pluck
                     </button>
-                    <button id="drone-toggle-btn" class="text-[10px] flex-1 py-1 border border-cyan-500/50 rounded hover:bg-cyan-500/20 transition-colors btn-active">
+                    <button id="drone-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
                         Drone
                     </button>
                     <button id="mono-toggle-btn" class="text-[10px] flex-1 py-1 border border-gray-700 text-gray-500 rounded hover:bg-cyan-500/20 transition-colors">
@@ -287,13 +292,13 @@
 
         // Default State - Will always init to this on reload
         let STATE = {
-            isPlaying: false, // Used internally to check init status mostly
+            isPlaying: false, 
             isRecording: false,
             recordMetronome: false,
             bpm: 120,
             baseFreq: 65.41, // C2 Default (MIDI 36)
             metronome: false,
-            droneEnabled: true,
+            droneEnabled: false, // Defaulted to OFF
             pluckMode: false, 
             monoMode: false, 
             portamento: 0, 
@@ -307,7 +312,6 @@
         };
 
         // --- ONBOARDING LOGIC ---
-        // Only tracking 'visited' status in localStorage now
         const onboardingPanel = document.getElementById('onboarding-panel');
         const startPanel = document.getElementById('start-panel');
         const visited = localStorage.getItem('portalVisited');
@@ -324,9 +328,14 @@
             startPanel.classList.remove('hidden-panel');
         });
 
+        document.getElementById('manual-btn').addEventListener('click', () => {
+            startPanel.classList.add('hidden-panel');
+            onboardingPanel.classList.remove('hidden-panel');
+        });
+
         // --- AUDIO ENGINE (Tone.js) ---
         let polySynth, monoSynth, droneOsc, metronomeSynth, metronomeLoop;
-        let delay, reverb, dist, autoFilter, limiter, recorder, dest, compressor;
+        let delay, reverb, dist, autoFilter, limiter, recorder, dest, compressor, softClipper;
         let metroRecordGain; 
         let meter;
         
@@ -335,12 +344,28 @@
         let activeNotes = new Map(); // Key (string) -> Note playing (Poly)
         let monoStack = []; // Array of notes currently held (Mono)
 
+        // SOFT CLIPPER CURVE GENERATOR
+        function makeSoftClipCurve(amount) {
+            const k = typeof amount === 'number' ? amount : 50;
+            const n_samples = 44100;
+            const curve = new Float32Array(n_samples);
+            const deg = Math.PI / 180;
+            for (let i = 0; i < n_samples; ++i) {
+                let x = i * 2 / n_samples - 1;
+                // Soft clip curve function
+                curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x)); 
+            }
+            return curve;
+        }
+
         async function initAudio() {
             await Tone.start();
             
             // 1. POLY SYNTH (Default)
+            // Reduced volume for more headroom (-10dB)
             polySynth = new Tone.PolySynth(Tone.FMSynth, {
-                volume: -8, 
+                maxPolyphony: 6, 
+                volume: -10, 
                 harmonicity: 1, 
                 modulationIndex: 0, 
                 oscillator: { type: "sine" }, 
@@ -351,10 +376,10 @@
 
             // 2. MONO SYNTH (For Portamento)
             monoSynth = new Tone.FMSynth({
-                volume: -5, // Slightly louder as it's a single voice
+                volume: -8, 
                 harmonicity: 1, 
                 modulationIndex: 0, 
-                portamento: 0, // Will be set by slider
+                portamento: 0, 
                 oscillator: { type: "sine" }, 
                 envelope: { attack: 0.05, decay: 0.3, sustain: 0.7, release: 1.5 }, 
                 modulation: { type: "sine" }, 
@@ -369,13 +394,23 @@
             }).toDestination();
 
             // 4. Effects Chain
+            // GENTLER CLIPPER: Curve amount reduced from 2.5 to 0.5 for transparent safety
+            softClipper = new Tone.WaveShaper(makeSoftClipCurve(0.5), 4096);
+            
             limiter = new Tone.Limiter(-1).toDestination();
             
+            // TRANSPARENT COMPRESSION: Higher threshold (-10dB), Lower Ratio (3:1)
             compressor = new Tone.Compressor({
-                threshold: -20, ratio: 6, attack: 0.005, release: 0.1
-            }).connect(limiter);
+                threshold: -10, 
+                ratio: 3, 
+                attack: 0.01, 
+                release: 0.1
+            }).connect(softClipper); 
 
-            reverb = new Tone.Reverb({ decay: 4, wet: 0.3 }).connect(compressor);
+            softClipper.connect(limiter); 
+
+            // Reverb: JCReverb (Lighter)
+            reverb = new Tone.JCReverb({ roomSize: 0.4, wet: 0.3 }).connect(compressor);
             delay = new Tone.PingPongDelay({ delayTime: "8n", feedback: 0.2, wet: 0.2 }).connect(reverb);
             dist = new Tone.Distortion({ distortion: 0, wet: 0 }).connect(delay);
             autoFilter = new Tone.AutoFilter({ frequency: "8n", baseFrequency: 200, octaves: 2.6, depth: 0.5, type: "sine" }).connect(dist).start();
@@ -431,7 +466,8 @@
             updateScale();
             setupKeyboard();
             
-            // Init UI with default STATE
+            loadStateFromStorage();
+            
             applyParams();
             updateBpm();
             updateDroneUI();
@@ -608,7 +644,8 @@
 
             const sOrb = STATE.orbs[1];
             calculateParams(sOrb);
-            reverb.decay = 1.5 + (sOrb.param1 * 8); 
+            // JCReverb parameter mapping is simpler than Reverb
+            reverb.roomSize.value = 0.2 + (sOrb.param1 * 0.7); // 0.2 to 0.9
             reverb.wet.value = 0.1 + (sOrb.param1 * 0.6);
 
             const dOrb = STATE.orbs[2];
@@ -834,6 +871,14 @@
             }
         }
 
+        function loadStateFromStorage() {
+            // NOT loading from storage on init anymore to ensure fresh start
+            // But we can leave the function here if we want to add a "Restore Last Session" button later
+        }
+
+        // Also save to local storage on unload as a backup
+        // Removed to ensure fresh start logic logic is clean
+
         const bpmSlider = document.getElementById('bpm-slider');
         bpmSlider.addEventListener('input', (e) => {
             STATE.bpm = parseInt(e.target.value);
@@ -971,4 +1016,3 @@
     </script>
 </body>
 </html>
-
