@@ -117,7 +117,7 @@
     <!-- Initial Overlay -->
     <div id="loading-overlay" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
         
-        <!-- Panel 1: Onboarding (Shown only on first visit or manual request) -->
+        <!-- Panel 1: Onboarding -->
         <div id="onboarding-panel" class="hidden-panel max-w-3xl w-full flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-4xl mb-2 tracking-widest text-cyan-400 glow-text">SYSTEM MANUAL</h1>
             <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent mb-8"></div>
@@ -162,7 +162,7 @@
             </button>
         </div>
 
-        <!-- Panel 2: Initialize (Standard Start) -->
+        <!-- Panel 2: Initialize -->
         <div id="start-panel" class="hidden-panel flex flex-col items-center animate-in fade-in duration-700">
             <h1 class="font-display text-5xl mb-4 tracking-widest text-white glow-text">PORTAL</h1>
             <p class="text-gray-400 mb-8 font-light tracking-wider">EXPERIMENTAL AUDIO ENVIRONMENT</p>
@@ -181,7 +181,7 @@
     <!-- Header / Top Controls -->
     <div class="absolute top-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div class="pointer-events-auto">
-            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.12</span></h1>
+            <h1 class="font-display text-2xl text-white/90 tracking-widest">PORTAL <span class="text-xs text-cyan-500 align-top opacity-70">V2.15</span></h1>
         </div>
         
         <div class="flex flex-col gap-4 items-end pointer-events-auto">
@@ -416,6 +416,8 @@
         let delay, reverb, dist, autoFilter, mainFilter, chorus, limiter, recorder, dest, compressor, softClipper;
         let metroRecordGain; 
         let meter;
+        // Setup Chunks array for robust recording
+        let chunks = [];
         
         let currentScale = []; 
         let activeNotes = new Map(); 
@@ -463,7 +465,7 @@
                 modulationEnvelope: { attack: 0.1, decay: 0.2, sustain: 1, release: 0.5 }
             });
             
-            // 3. Drone Oscillator
+            // 3. Drone Oscillator - REVERTED TO SINE FOR STABILITY
             droneOsc = new Tone.PulseOscillator({
                 width: 0.5,
                 frequency: STATE.baseFreq,
@@ -533,23 +535,29 @@
             arpPattern.interval = "8n";
             arpPattern.start(0);
 
-            // 7. Recorder
+            // 7. Recorder setup (ROBUST REWRITE)
             dest = Tone.context.createMediaStreamDestination();
             limiter.connect(dest);
+            
             metroRecordGain = new Tone.Gain(0); 
             metronomeSynth.connect(metroRecordGain);
             metroRecordGain.connect(dest);
 
             recorder = new MediaRecorder(dest.stream);
             
+            // Use chunk accumulation for reliable downloads
             recorder.ondataavailable = evt => {
-                if (evt.data.size > 0) {
-                    const url = URL.createObjectURL(evt.data);
-                    const anchor = document.createElement("a");
-                    anchor.download = `portal-gen-${Date.now()}.webm`;
-                    anchor.href = url;
-                    anchor.click();
-                }
+                chunks.push(evt.data);
+            };
+            
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement("a");
+                anchor.download = `portal-gen-${Date.now()}.webm`;
+                anchor.href = url;
+                anchor.click();
+                chunks = []; // Reset chunks
             };
 
             meter = new Tone.Meter();
@@ -1083,6 +1091,39 @@
             if(droneOsc) droneOsc.frequency.rampTo(STATE.baseFreq, 0.1);
             updateScale();
         });
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            if (!recorder) return;
+
+            const btn = document.getElementById('export-btn');
+            const status = document.getElementById('rec-status');
+
+            if (!STATE.isRecording) {
+                chunks = [];
+                recorder.start();
+                STATE.isRecording = true;
+                
+                btn.innerText = "STOP RECORDING";
+                btn.classList.add('border-red-500', 'text-red-500', 'hover:bg-red-500/10');
+                btn.classList.remove('border-l-cyan-500', 'text-white');
+                btn.style.borderLeftColor = '#ef4444';
+                
+                status.style.opacity = 1;
+                status.classList.add('animate-pulse');
+            } else {
+                recorder.stop();
+                STATE.isRecording = false;
+                
+                btn.innerText = "RECORD AUDIO";
+                btn.classList.remove('border-red-500', 'text-red-500', 'hover:bg-red-500/10');
+                btn.classList.add('border-l-cyan-500', 'text-white');
+                btn.style.borderLeftColor = '';
+                
+                status.style.opacity = 0; 
+                status.classList.remove('animate-pulse');
+            }
+        });
+
 
         function draw() {
             requestAnimationFrame(draw);
