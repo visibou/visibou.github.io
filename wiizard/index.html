@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MKWii Save Editor</title>
+    <title>Wiizard!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -115,8 +115,7 @@
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* Custom Scrollbar */
+
         .custom-scroll::-webkit-scrollbar {
             width: 8px;
         }
@@ -131,7 +130,6 @@
             background: #94a3b8; 
         }
 
-        /* Rank Colors */
         .rank-gold { color: #d97706; }
         .rank-silver { color: #64748b; }
         .rank-bronze { color: #b45309; }
@@ -140,7 +138,6 @@
 </head>
 <body class="p-4 md:p-8 text-slate-800 stripe-bg">
 
-    <!-- Header -->
     <header class="max-w-6xl mx-auto mb-8 flex items-center justify-between">
         <div>
             <h1 class="text-4xl font-bold text-slate-900 uppercase tracking-tighter">
@@ -154,7 +151,6 @@
         </div>
     </header>
 
-    <!-- File Upload Section -->
     <div id="upload-section" class="max-w-2xl mx-auto wii-card rounded-xl p-12 text-center transition-all duration-300 mt-10 border-2 border-slate-200 border-dashed">
         <div class="mb-8">
             <div class="w-20 h-20 mx-auto bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-500">
@@ -170,18 +166,13 @@
         <p id="error-msg" class="text-red-500 font-bold mt-6 hidden bg-red-50 p-3 rounded border border-red-200"></p>
     </div>
 
-    <!-- Main Editor Dashboard -->
     <div id="dashboard" class="max-w-6xl mx-auto hidden animate-fade-in">
         
-        <!-- Top Tabs (Licenses) -->
         <div class="flex flex-wrap gap-2 mb-6" id="tabs-container">
-            <!-- Injected -->
         </div>
 
-        <!-- Main Content Card -->
         <div class="wii-card rounded-xl shadow-xl overflow-hidden min-h-[600px] flex flex-col">
             
-            <!-- Sub Navigation -->
             <div class="bg-slate-50 border-b border-slate-200 px-6 py-4" id="sub-tabs-container">
                 <div class="segmented-control">
                     <button class="segment-btn active" data-tab="overview">Overview</button>
@@ -192,14 +183,11 @@
                 </div>
             </div>
 
-            <!-- Content Area -->
             <div class="p-6 md:p-8 flex-grow bg-white/50 relative">
                 <div id="license-content">
-                    <!-- Dynamic Content -->
                 </div>
             </div>
 
-            <!-- Footer / Save Actions -->
             <div class="bg-slate-50 border-t border-slate-200 p-6 flex justify-between items-center">
                 <div class="text-xs font-mono text-slate-400">
                     Wiizard is not affiliated nor endorsed by Nintendo.
@@ -213,7 +201,6 @@
     </div>
 
     <script>
-        // --- Configuration ---
         const FILE_SIZE_MIN = 0x28000;
         const CRC_OFFSET = 0x27FFC;
         
@@ -223,8 +210,6 @@
             { id: 2, name: 'License 3', offset: 0x11988 },
             { id: 3, name: 'License 4', offset: 0x1A648 }
         ];
-
-        // --- MAPPINGS ---
         
         const UNLOCKS = {
             characters: [
@@ -315,8 +300,6 @@
             "GCN Cookie Land", "DS Twilight House", "SNES Battle Course 4", "GBA Battle Course 3", "N64 Skyscraper"
         ].map((n, i) => ({ name: n, offset: 0x1A6 + (i * 2), type: 'uint16' }));
 
-        // Cup Data Config
-        // Calculated Base Offset: 0x1C0 (After Favorites) to align with Mirror Mode @ 0xAC0
         const CUP_CLASSES = [
             { name: "50cc", baseOffset: 0x1C0 },
             { name: "100cc", baseOffset: 0x4C0 },
@@ -339,14 +322,11 @@
             { val: 0, label: "Gold" }, { val: 1, label: "Silver" }, { val: 2, label: "Bronze" }, { val: 3, label: "None" }
         ];
 
-        // --- State ---
         let rawData = null;
         let dataView = null;
         let activeLicenseIdx = 0;
         let activeSubTab = 'overview';
-        let activeCupClassIdx = 0; // 0=50cc, 1=100cc etc
-
-        // --- Core Logic ---
+        let activeCupClassIdx = 0; 
 
         const crcTable = (() => {
             let c;
@@ -401,8 +381,6 @@
             r.readAsArrayBuffer(f);
         });
 
-        // --- Rendering ---
-
         function renderTabs() {
             tabsContainer.innerHTML = '';
             LICENSES.forEach((lic, idx) => {
@@ -418,8 +396,7 @@
                 tabsContainer.appendChild(btn);
             });
         }
-
-        // Handle Segmented Control Clicks
+        
         document.querySelectorAll('.segment-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 activeSubTab = e.target.dataset.tab;
@@ -428,7 +405,6 @@
         });
 
         function renderContent() {
-            // Update Segmented Control UI
             document.querySelectorAll('.segment-btn').forEach(btn => {
                 if(btn.dataset.tab === activeSubTab) btn.classList.add('active');
                 else btn.classList.remove('active');
@@ -472,10 +448,8 @@
         }
 
         function renderCups(licOffset) {
-            // Render Class Selector + Cup Grid
             const activeClass = CUP_CLASSES[activeCupClassIdx];
             
-            // Generate Sub-tabs for Classes
             const classTabs = CUP_CLASSES.map((c, i) => `
                 <button onclick="activeCupClassIdx = ${i}; renderContent()" 
                     class="px-4 py-2 rounded text-sm font-bold uppercase transition-colors ${i === activeCupClassIdx ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-500 hover:bg-slate-50'}">
@@ -483,24 +457,16 @@
                 </button>
             `).join('');
 
-            // Calculate start offset for this class
             const classStart = licOffset + activeClass.baseOffset;
             
-            // Generate Cup Cards
             const cupCards = CUP_NAMES.map((cupName, i) => {
-                // Stride is 0x60 (96 bytes) per cup
                 const cupOffset = classStart + (i * 0x60);
                 
-                // Read Data
-                // 0x4F: 2 bits Cup (bits 0-1)
-                // 0x51: 4 bits Rank (bits 4-7 based on PDF "0x51.4")
-                // 0x52: 1 bit Completed (bit 0)
-                
                 const byte4F = dataView.getUint8(cupOffset + 0x4F);
-                const trophyVal = byte4F & 0x03; // Mask 00000011
+                const trophyVal = byte4F & 0x03; 
                 
                 const byte51 = dataView.getUint8(cupOffset + 0x51);
-                const rankVal = (byte51 >> 4) & 0x0F; // Upper 4 bits
+                const rankVal = (byte51 >> 4) & 0x0F;
                 
                 const byte52 = dataView.getUint8(cupOffset + 0x52);
                 const isCompleted = (byte52 & 0x01) === 1;
@@ -626,7 +592,6 @@
             `;
         }
 
-        // --- Update Functions ---
 
         window.updateGenericStat = (base, offset, type, valStr) => {
             const addr = base + offset;
@@ -649,19 +614,16 @@
 
         window.updateCup = (cupOffset, type, value) => {
             if (type === 'trophy') {
-                // Offset 0x4F, bits 0-1
                 const addr = cupOffset + 0x4F;
                 let val = dataView.getUint8(addr);
-                val = (val & 0xFC) | (parseInt(value) & 0x03); // Clear last 2 bits, set new
+                val = (val & 0xFC) | (parseInt(value) & 0x03); 
                 dataView.setUint8(addr, val);
             } else if (type === 'rank') {
-                // Offset 0x51, bits 4-7
                 const addr = cupOffset + 0x51;
                 let val = dataView.getUint8(addr);
-                val = (val & 0x0F) | ((parseInt(value) & 0x0F) << 4); // Clear upper 4, set new
+                val = (val & 0x0F) | ((parseInt(value) & 0x0F) << 4); 
                 dataView.setUint8(addr, val);
             } else if (type === 'complete') {
-                // Offset 0x52, bit 0
                 const addr = cupOffset + 0x52;
                 let val = dataView.getUint8(addr);
                 if (value) val |= 0x01;
@@ -670,7 +632,6 @@
             }
         };
 
-        // --- Save ---
         document.getElementById('save-btn').onclick = () => {
             dataView.setUint32(CRC_OFFSET, crc32(rawData), false);
             const b = new Blob([rawData], {type: "application/octet-stream"});
@@ -682,4 +643,5 @@
         };
     </script>
 </body>
+
 </html>
