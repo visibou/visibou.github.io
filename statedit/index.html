@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MK8DX Stat Editor</title>
+    <title>StatEdit</title>
     
-    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -20,11 +19,9 @@
             overflow-x: hidden;
         }
         
-        /* Loading & Error States */
         #error-display { display: none; padding: 20px; background: #fee2e2; color: #b91c1c; border-bottom: 2px solid #ef4444; }
         #loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 24px; color: #666; font-style: italic; }
 
-        /* MK8DX Background Pattern */
         .mk-bg {
             background-color: #e5e7eb;
             background-image: 
@@ -112,7 +109,6 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* Utility for red unused stat */
         .stat-unused label { color: #dc2626 !important; }
         .stat-unused input { border-color: #fecaca !important; background-color: #fef2f2 !important; color: #dc2626 !important; }
     </style>
@@ -134,7 +130,6 @@
     </script>
 
     <script type="text/babel">
-        // --- Data Definitions ---
 
         const STATS_MAP = [
             { id: 0, name: "Weight", note: "Affects collisions" },
@@ -194,7 +189,6 @@
 
         const STAT_BLOCK_SIZE = 0x38;
 
-        // --- Custom Icons (Inline SVG for reliability) ---
         const Icons = {
             Save: () => (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -224,7 +218,6 @@
             Alert: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>),
         };
 
-        // --- Sub Components ---
 
         const TabButton = ({ id, label, icon: Icon, activeTab, onClick }) => (
             <button
@@ -288,7 +281,6 @@
             if (activeTab === 'wheels') itemName = WHEELS[selectedItemIndex];
             if (activeTab === 'gliders') itemName = GLIDERS[selectedItemIndex];
 
-            // Warning Logic for Miis
             let warningMsg = null;
             if (activeTab === 'characters') {
                 if (selectedItemIndex === 17) warningMsg = "Edits also affect Small-Sized Miis";
@@ -388,7 +380,6 @@
             </div>
         );
 
-        // --- Main App ---
 
         function App() {
             const [fileData, setFileData] = React.useState(null);
@@ -397,7 +388,6 @@
             const [selectedItemIndex, setSelectedItemIndex] = React.useState(null);
             const [refreshKey, setRefreshKey] = React.useState(0);
 
-            // --- Binary Logic ---
             const getOffset = (category) => {
                 switch (category) {
                     case 'characters': return OFFSETS.CHARACTERS;
@@ -507,7 +497,7 @@
                         </button>
                     </header>
 
-                    {/* Navigation */}
+                    {/* Navegção */}
                     <nav className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
                         <TabButton id="characters" label="Characters" icon={Icons.User} activeTab={activeTab} onClick={() => { setActiveTab('characters'); setSelectedItemIndex(null); }} />
                         <TabButton id="karts" label="Karts" icon={Icons.Car} activeTab={activeTab} onClick={() => { setActiveTab('karts'); setSelectedItemIndex(null); }} />
@@ -516,7 +506,7 @@
                         <TabButton id="info" label="Extra Info" icon={Icons.Info} activeTab={activeTab} onClick={() => { setActiveTab('info'); setSelectedItemIndex(null); }} />
                     </nav>
 
-                    {/* Main Content Area */}
+                    {/* Main */}
                     <main className="flex-1 grid md:grid-cols-12 gap-6 min-h-0">
                         {activeTab === 'info' ? (
                             <div className="md:col-span-12">
@@ -524,7 +514,7 @@
                             </div>
                         ) : (
                             <>
-                                {/* Selection List */}
+                                {/* Lista */}
                                 <div className="md:col-span-4 lg:col-span-3 mk-panel p-4 h-fit">
                                     <div className="flex items-center gap-2 mb-4 pl-2 border-l-4 border-blue-500">
                                         <h3 className="text-lg font-black italic text-gray-400 uppercase">
@@ -538,7 +528,7 @@
                                     />
                                 </div>
 
-                                {/* Editor Panel */}
+                                {/* Editor */}
                                 <div className="md:col-span-8 lg:col-span-9">
                                     <StatEditor 
                                         activeTab={activeTab} 
@@ -566,4 +556,5 @@
         }
     </script>
 </body>
+
 </html>
