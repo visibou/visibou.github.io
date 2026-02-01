@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MKWii Save Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            min-height: 100vh;
+        }
+        
+        .wii-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .wii-btn {
+            background: linear-gradient(to bottom, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #94a3b8;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .wii-btn:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .wii-btn:active {
+            transform: translateY(0);
+        }
+
+        .wii-tab-active {
+            background: #2563eb;
+            color: white;
+            border-color: #1d4ed8;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Segmented Control Styles */
+        .segmented-control {
+            background: #e2e8f0;
+            padding: 0.3rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .segment-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+
+        .segment-btn:hover {
+            color: #334155;
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        .segment-btn.active {
+            background-color: white;
+            color: #2563eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .wii-input {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+            font-family: 'Chakra Petch', monospace;
+        }
+        
+        .wii-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .stripe-bg {
+            background-color: #f1f5f9;
+            background-image: repeating-linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0), repeating-linear-gradient(45deg, #e2e8f0 25%, #f1f5f9 25%, #f1f5f9 75%, #e2e8f0 75%, #e2e8f0);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+        }
+
+        .unlock-checkbox:checked + div {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Rank Colors */
+        .rank-gold { color: #d97706; }
+        .rank-silver { color: #64748b; }
+        .rank-bronze { color: #b45309; }
+        .grade-star { color: #eab308; text-shadow: 0 0 2px rgba(234, 179, 8, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-800 stripe-bg">
+
+    <!-- Header -->
+    <header class="max-w-6xl mx-auto mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-4xl font-bold text-slate-900 uppercase tracking-tighter">
+                <span class="text-blue-600">Wiizard</span>
+            </h1>
+            <p class="text-slate-500 text-sm font-medium">Mario Kart Wii Save Editor</p>
+        </div>
+        <div class="hidden md:block text-right">
+            <div class="text-xs font-bold text-slate-400 uppercase">Version</div>
+            <div class="font-mono text-slate-600">1.4.0</div>
+        </div>
+    </header>
+
+    <!-- File Upload Section -->
+    <div id="upload-section" class="max-w-2xl mx-auto wii-card rounded-xl p-12 text-center transition-all duration-300 mt-10 border-2 border-slate-200 border-dashed">
+        <div class="mb-8">
+            <div class="w-20 h-20 mx-auto bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-500">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            </div>
+            <h2 class="text-3xl font-bold mb-2 text-slate-800">Load Save Data</h2>
+            <p class="text-slate-500">Select your <code class="bg-white border border-slate-300 px-2 py-0.5 rounded text-sm font-mono text-blue-600">rksys.dat</code></p>
+        </div>
+        <input type="file" id="file-input" accept=".dat" class="hidden">
+        <label for="file-input" class="wii-btn px-10 py-4 rounded-lg text-lg font-bold cursor-pointer inline-block shadow-lg text-slate-700 hover:text-blue-600">
+            Open File
+        </label>
+        <p id="error-msg" class="text-red-500 font-bold mt-6 hidden bg-red-50 p-3 rounded border border-red-200"></p>
+    </div>
+
+    <!-- Main Editor Dashboard -->
+    <div id="dashboard" class="max-w-6xl mx-auto hidden animate-fade-in">
+        
+        <!-- Top Tabs (Licenses) -->
+        <div class="flex flex-wrap gap-2 mb-6" id="tabs-container">
+            <!-- Injected -->
+        </div>
+
+        <!-- Main Content Card -->
+        <div class="wii-card rounded-xl shadow-xl overflow-hidden min-h-[600px] flex flex-col">
+            
+            <!-- Sub Navigation -->
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4" id="sub-tabs-container">
+                <div class="segmented-control">
+                    <button class="segment-btn active" data-tab="overview">Overview</button>
+                    <button class="segment-btn" data-tab="unlocks">Unlocks</button>
+                    <button class="segment-btn" data-tab="cups">Cups & Ranks</button>
+                    <button class="segment-btn" data-tab="performance">Performance</button>
+                    <button class="segment-btn" data-tab="usage">Usage Stats</button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 md:p-8 flex-grow bg-white/50 relative">
+                <div id="license-content">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <!-- Footer / Save Actions -->
+            <div class="bg-slate-50 border-t border-slate-200 p-6 flex justify-between items-center">
+                <div class="text-xs font-mono text-slate-400">
+                    Wiizard is not affiliated nor endorsed by Nintendo.
+                </div>
+                <button id="save-btn" class="wii-btn bg-blue-600 text-blue-700 border-blue-300 px-8 py-3 rounded font-bold flex items-center gap-2 shadow-sm hover:shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Save rksys.dat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const FILE_SIZE_MIN = 0x28000;
+        const CRC_OFFSET = 0x27FFC;
+        
+        const LICENSES = [
+            { id: 0, name: 'License 1', offset: 0x08 },
+            { id: 1, name: 'License 2', offset: 0x8CC8 },
+            { id: 2, name: 'License 3', offset: 0x11988 },
+            { id: 3, name: 'License 4', offset: 0x1A648 }
+        ];
+
+        // --- MAPPINGS ---
+        
+        const UNLOCKS = {
+            characters: [
+                { name: 'Rosalina', byte: 0x32, bit: 4 }, { name: 'Funky Kong', byte: 0x32, bit: 5 },
+                { name: 'King Boo', byte: 0x32, bit: 6 }, { name: 'Dry Bowser', byte: 0x32, bit: 7 },
+                { name: 'Birdo', byte: 0x33, bit: 0 }, { name: 'Daisy', byte: 0x33, bit: 1 },
+                { name: 'Bowser Jr.', byte: 0x33, bit: 2 }, { name: 'Diddy Kong', byte: 0x33, bit: 3 },
+                { name: 'Baby Luigi', byte: 0x33, bit: 4 }, { name: 'Baby Daisy', byte: 0x33, bit: 5 },
+                { name: 'Toadette', byte: 0x33, bit: 6 }, { name: 'Dry Bones', byte: 0x33, bit: 7 },
+                { name: 'Mii (Outfit A)', byte: 0x32, bit: 3 }, { name: 'Mii (Outfit B)', byte: 0x32, bit: 2 }
+            ],
+            vehicles: [
+                { name: 'Phantom', byte: 0x35, bit: 4 }, { name: 'Spear', byte: 0x35, bit: 5 },
+                { name: 'Shooting Star', byte: 0x35, bit: 6 }, { name: 'Dolphin Dasher', byte: 0x35, bit: 7 },
+                { name: 'Sneakster', byte: 0x36, bit: 0 }, { name: 'Zip Zip', byte: 0x36, bit: 1 },
+                { name: 'Jet Bubble', byte: 0x36, bit: 2 }, { name: 'Magikruiser', byte: 0x36, bit: 3 },
+                { name: 'Quacker', byte: 0x36, bit: 4 }, { name: 'Honeycoupe', byte: 0x36, bit: 5 },
+                { name: 'Jetsetter', byte: 0x36, bit: 6 }, { name: 'Piranha Prowler', byte: 0x36, bit: 7 },
+                { name: 'Sprinter', byte: 0x37, bit: 0 }, { name: 'Daytripper', byte: 0x37, bit: 1 },
+                { name: 'Super Blooper', byte: 0x37, bit: 2 }, { name: 'Blue Falcon', byte: 0x37, bit: 3 },
+                { name: 'Tiny Titan', byte: 0x37, bit: 4 }, { name: 'Cheep Charger', byte: 0x37, bit: 5 }
+            ],
+            cups: [
+                { name: 'Mirror Mode', byte: 0x35, bit: 3 }
+            ]
+        };
+
+        const STATS_OVERVIEW = [
+            { name: 'VR (Versus Rating)', offset: 0xB0, type: 'uint16' },
+            { name: 'BR (Battle Rating)', offset: 0xB2, type: 'uint16' },
+            { name: 'Offline Wins (VS)', offset: 0x88, type: 'int32' },
+            { name: 'Offline Losses (VS)', offset: 0x8C, type: 'int32' },
+            { name: 'Offline Wins (Battle)', offset: 0x90, type: 'int32' },
+            { name: 'Offline Losses (Battle)', offset: 0x94, type: 'int32' },
+            { name: 'WFC Wins (VS)', offset: 0x98, type: 'int32' },
+            { name: 'WFC Losses (VS)', offset: 0x9C, type: 'int32' },
+            { name: 'WFC Wins (Battle)', offset: 0xA0, type: 'int32' },
+            { name: 'WFC Losses (Battle)', offset: 0xA4, type: 'int32' },
+            { name: 'Ghost Race Wins', offset: 0xA8, type: 'int32' },
+            { name: 'Ghost Race Losses', offset: 0xAC, type: 'int32' },
+        ];
+
+        const STATS_PERFORMANCE = [
+            { name: 'Distance Travelled (km?)', offset: 0xC4, type: 'float' },
+            { name: 'Distance in 1st Place', offset: 0xE0, type: 'float' },
+            { name: 'Distance in VS Races', offset: 0xE4, type: 'float' },
+            { name: 'Total Race Count', offset: 0xB4, type: 'int32' },
+            { name: 'Total Battle Count', offset: 0xB8, type: 'int32' },
+            { name: 'Races w/ Wii Wheel', offset: 0xBC, type: 'int32' },
+            { name: 'Battles w/ Wii Wheel', offset: 0xC0, type: 'int32' },
+            { name: 'Ghost Challenges Sent', offset: 0xC8, type: 'int32' },
+            { name: 'Ghost Challenges Received', offset: 0xCC, type: 'int32' },
+            { name: 'Item Hits Delivered', offset: 0xD0, type: 'int32' },
+            { name: 'Item Hits Received', offset: 0xD4, type: 'int32' },
+            { name: 'Tricks Performed', offset: 0xD8, type: 'int32' },
+            { name: 'Times 1st Place', offset: 0xDC, type: 'int32' },
+            { name: 'Competitions Entered', offset: 0xE8, type: 'uint16' },
+        ];
+
+        const USAGE_CHARACTERS = [
+            "Mario", "Baby Peach", "Waluigi", "Bowser", "Baby Daisy", "Dry Bones", "Baby Mario", "Luigi",
+            "Toad", "Donkey Kong", "Yoshi", "Wario", "Baby Luigi", "Toadette", "Koopa Troopa", "Daisy",
+            "Peach", "Birdo", "Diddy Kong", "King Boo", "Bowser Jr.", "Dry Bowser", "Funky Kong", "Rosalina", "Mii"
+        ].map((n, i) => ({ name: n, offset: 0xEC + (i * 2), type: 'uint16' }));
+
+        const USAGE_VEHICLES = [
+            "Std Kart S", "Std Kart M", "Std Kart L", "Booster Seat", "Classic Dragster", "Offroader",
+            "Mini Beast", "Wild Wing", "Flame Flyer", "Cheep Charger", "Super Blooper", "Piranha Prowler",
+            "Tiny Titan", "Daytripper", "Jetsetter", "Blue Falcon", "Sprinter", "Honeycoupe",
+            "Std Bike S", "Std Bike M", "Std Bike L", "Bullet Bike", "Mach Bike", "Flame Runner",
+            "Bit Bike", "Sugarscoot", "Wario Bike", "Quacker", "Zip Zip", "Shooting Star",
+            "Magikruiser", "Sneakster", "Spear", "Jet Bubble", "Dolphin Dasher", "Phantom"
+        ].map((n, i) => ({ name: n, offset: 0x11E + (i * 2), type: 'uint16' }));
+
+        const USAGE_COURSES = [
+            "Mario Circuit", "Moo Moo Meadows", "Mushroom Gorge", "Grumble Volcano",
+            "Toad's Factory", "Coconut Mall", "DK Summit", "Wario's Gold Mine",
+            "Luigi Circuit", "Daisy Circuit", "Moonview Highway", "Maple Treeway",
+            "Bowser's Castle", "Rainbow Road", "Dry Dry Ruins", "Koopa Cape",
+            "GCN Peach Beach", "GCN Mario Circuit", "GCN Waluigi Stadium", "GCN DK Mountain",
+            "DS Yoshi Falls", "DS Desert Hills", "DS Peach Gardens", "DS Delfino Square",
+            "SNES Mario Circuit 3", "SNES Ghost Valley 2", "N64 Mario Raceway", "N64 Sherbet Land",
+            "N64 Bowser's Castle", "N64 DK Jungle Parkway", "GBA Bowser Castle 3", "GBA Shy Guy Beach"
+        ].map((n, i) => ({ name: n, offset: 0x166 + (i * 2), type: 'uint16' }));
+
+        const USAGE_STAGES = [
+            "Delfino Pier", "Block Plaza", "Chain Chomp Wheel", "Funky Stadium", "Thwomp Desert",
+            "GCN Cookie Land", "DS Twilight House", "SNES Battle Course 4", "GBA Battle Course 3", "N64 Skyscraper"
+        ].map((n, i) => ({ name: n, offset: 0x1A6 + (i * 2), type: 'uint16' }));
+
+        // Cup Data Config
+        // Calculated Base Offset: 0x1C0 (After Favorites) to align with Mirror Mode @ 0xAC0
+        const CUP_CLASSES = [
+            { name: "50cc", baseOffset: 0x1C0 },
+            { name: "100cc", baseOffset: 0x4C0 },
+            { name: "150cc", baseOffset: 0x7C0 },
+            { name: "Mirror", baseOffset: 0xAC0 }
+        ];
+
+        const CUP_NAMES = [
+            "Mushroom Cup", "Flower Cup", "Star Cup", "Special Cup",
+            "Shell Cup", "Banana Cup", "Leaf Cup", "Lightning Cup"
+        ];
+        
+        const RANKS = [
+            { val: 0, label: "★★★" }, { val: 1, label: "★★" }, { val: 2, label: "★" },
+            { val: 3, label: "A" }, { val: 4, label: "B" }, { val: 5, label: "C" },
+            { val: 6, label: "D" }, { val: 7, label: "E" }, { val: 8, label: "F" }
+        ];
+
+        const TROPHIES = [
+            { val: 0, label: "Gold" }, { val: 1, label: "Silver" }, { val: 2, label: "Bronze" }, { val: 3, label: "None" }
+        ];
+
+        // --- State ---
+        let rawData = null;
+        let dataView = null;
+        let activeLicenseIdx = 0;
+        let activeSubTab = 'overview';
+        let activeCupClassIdx = 0; // 0=50cc, 1=100cc etc
+
+        // --- Core Logic ---
+
+        const crcTable = (() => {
+            let c;
+            const t = [];
+            for(let n=0; n<256; n++){
+                c=n; for(let k=0; k<8; k++) c=((c&1)?(0xEDB88320^(c>>>1)):(c>>>1));
+                t[n]=c;
+            }
+            return t;
+        })();
+
+        const crc32 = (buf) => {
+            const u = new Uint8Array(buf);
+            let crc = 0^(-1);
+            for (let i=0; i<CRC_OFFSET; i++) crc = (crc>>>8)^crcTable[(crc^u[i])&0xFF];
+            return (crc^(-1))>>>0;
+        };
+
+        const decodeMiiName = (offset) => {
+            try {
+                const b = new Uint8Array(rawData, offset+0x14, 20);
+                return new TextDecoder('utf-16be').decode(b).replace(/\0/g, '') || "No Mii";
+            } catch(e) { return "Unknown"; }
+        };
+
+        const fileInput = document.getElementById('file-input');
+        const uploadSection = document.getElementById('upload-section');
+        const dashboard = document.getElementById('dashboard');
+        const tabsContainer = document.getElementById('tabs-container');
+        const licenseContent = document.getElementById('license-content');
+        
+        fileInput.addEventListener('change', (e) => {
+            const f = e.target.files[0];
+            if(!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                rawData = ev.target.result;
+                dataView = new DataView(rawData);
+                if(rawData.byteLength < FILE_SIZE_MIN) {
+                    document.getElementById('error-msg').textContent = "File too small.";
+                    document.getElementById('error-msg').classList.remove('hidden');
+                    return;
+                }
+                const m = new TextDecoder().decode(new Uint8Array(rawData, 0x08, 4));
+                if(m !== "RKPD") alert("Warning: RKPD header not found. This might not be a valid save.");
+                
+                uploadSection.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                renderTabs();
+                renderContent();
+            };
+            r.readAsArrayBuffer(f);
+        });
+
+        // --- Rendering ---
+
+        function renderTabs() {
+            tabsContainer.innerHTML = '';
+            LICENSES.forEach((lic, idx) => {
+                const btn = document.createElement('button');
+                const mii = decodeMiiName(lic.offset);
+                const isActive = idx === activeLicenseIdx;
+                btn.className = `wii-btn px-6 py-3 rounded-lg font-bold shadow-sm flex-1 md:flex-none min-w-[140px] text-left ${isActive ? 'wii-tab-active ring-2 ring-blue-400' : 'text-slate-600 bg-white'}`;
+                btn.innerHTML = `
+                    <div class="text-[10px] opacity-70 mb-1 tracking-wider uppercase">${lic.name}</div>
+                    <div class="truncate text-lg">${mii}</div>
+                `;
+                btn.onclick = () => { activeLicenseIdx = idx; renderTabs(); renderContent(); };
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        // Handle Segmented Control Clicks
+        document.querySelectorAll('.segment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                activeSubTab = e.target.dataset.tab;
+                renderContent();
+            });
+        });
+
+        function renderContent() {
+            // Update Segmented Control UI
+            document.querySelectorAll('.segment-btn').forEach(btn => {
+                if(btn.dataset.tab === activeSubTab) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            const lic = LICENSES[activeLicenseIdx];
+            let html = `<div class="animate-fade-in space-y-6">`;
+
+            if (activeSubTab === 'overview') {
+                html += renderStatsGrid("Main Records", STATS_OVERVIEW, lic.offset);
+            } else if (activeSubTab === 'unlocks') {
+                html += renderUnlocks(lic.offset);
+            } else if (activeSubTab === 'cups') {
+                html += renderCups(lic.offset);
+            } else if (activeSubTab === 'performance') {
+                html += renderStatsGrid("Detailed Performance", STATS_PERFORMANCE, lic.offset);
+            } else if (activeSubTab === 'usage') {
+                const renderCard = (title, list) => `
+                    <div class="bg-white rounded border border-slate-200 h-96 flex flex-col overflow-hidden">
+                        <div class="bg-white p-4 border-b border-slate-100 z-10 shadow-sm shrink-0">
+                            <h3 class="font-bold text-slate-400 uppercase text-xs">${title}</h3>
+                        </div>
+                        <div class="overflow-y-auto p-4 custom-scroll grow relative">
+                             ${list}
+                        </div>
+                    </div>
+                `;
+
+                html += `
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        ${renderCard("Favorite Character (Races Completed)", renderUsageList(USAGE_CHARACTERS, lic.offset))}
+                        ${renderCard("Favorite Vehicle (Races Completed)", renderUsageList(USAGE_VEHICLES, lic.offset))}
+                        ${renderCard("Favorite Course (Races Completed)", renderUsageList(USAGE_COURSES, lic.offset))}
+                        ${renderCard("Favorite Stage (Battles Completed)", renderUsageList(USAGE_STAGES, lic.offset))}
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            licenseContent.innerHTML = html;
+        }
+
+        function renderCups(licOffset) {
+            // Render Class Selector + Cup Grid
+            const activeClass = CUP_CLASSES[activeCupClassIdx];
+            
+            // Generate Sub-tabs for Classes
+            const classTabs = CUP_CLASSES.map((c, i) => `
+                <button onclick="activeCupClassIdx = ${i}; renderContent()" 
+                    class="px-4 py-2 rounded text-sm font-bold uppercase transition-colors ${i === activeCupClassIdx ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-500 hover:bg-slate-50'}">
+                    ${c.name}
+                </button>
+            `).join('');
+
+            // Calculate start offset for this class
+            const classStart = licOffset + activeClass.baseOffset;
+            
+            // Generate Cup Cards
+            const cupCards = CUP_NAMES.map((cupName, i) => {
+                // Stride is 0x60 (96 bytes) per cup
+                const cupOffset = classStart + (i * 0x60);
+                
+                // Read Data
+                // 0x4F: 2 bits Cup (bits 0-1)
+                // 0x51: 4 bits Rank (bits 4-7 based on PDF "0x51.4")
+                // 0x52: 1 bit Completed (bit 0)
+                
+                const byte4F = dataView.getUint8(cupOffset + 0x4F);
+                const trophyVal = byte4F & 0x03; // Mask 00000011
+                
+                const byte51 = dataView.getUint8(cupOffset + 0x51);
+                const rankVal = (byte51 >> 4) & 0x0F; // Upper 4 bits
+                
+                const byte52 = dataView.getUint8(cupOffset + 0x52);
+                const isCompleted = (byte52 & 0x01) === 1;
+
+                return `
+                    <div class="bg-white border border-slate-200 rounded p-4 shadow-sm hover:border-blue-300 transition-all">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="font-bold text-slate-700">${cupName}</div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <span class="text-[10px] font-bold uppercase text-slate-400">Done</span>
+                                <input type="checkbox" class="accent-blue-600 w-4 h-4" 
+                                    ${isCompleted ? 'checked' : ''}
+                                    onchange="updateCup(${cupOffset}, 'complete', this.checked)">
+                            </label>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Trophy</label>
+                                <select onchange="updateCup(${cupOffset}, 'trophy', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm font-bold text-slate-700 outline-none focus:border-blue-400">
+                                    ${TROPHIES.map(t => `<option value="${t.val}" ${t.val == trophyVal ? 'selected' : ''}>${t.label}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Rank</label>
+                                <select onchange="updateCup(${cupOffset}, 'rank', this.value)" class="w-full bg-slate-50 border border-slate-200 rounded p-1 text-sm font-bold text-slate-700 outline-none focus:border-blue-400">
+                                    ${RANKS.map(r => `<option value="${r.val}" ${r.val == rankVal ? 'selected' : ''}>${r.label}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div>
+                    <div class="flex flex-wrap gap-2 mb-6 bg-slate-100 p-2 rounded-lg inline-flex">
+                        ${classTabs}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        ${cupCards}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStatsGrid(title, statsArr, baseOffset) {
+            return `
+                <div>
+                    <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-blue-500"></span> ${title}
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        ${statsArr.map((stat, i) => {
+                            let val = 0;
+                            const addr = baseOffset + stat.offset;
+                            if(stat.type === 'int32') val = dataView.getInt32(addr, false);
+                            else if(stat.type === 'uint16') val = dataView.getUint16(addr, false);
+                            else if(stat.type === 'float') val = dataView.getFloat32(addr, false).toFixed(2);
+                            
+                            return `
+                                <div class="bg-slate-50 p-3 rounded border border-slate-200 hover:border-blue-300 transition-colors">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">${stat.name}</label>
+                                    <input type="text" 
+                                        class="wii-input w-full p-1 bg-white rounded font-mono font-bold text-slate-700"
+                                        value="${val}"
+                                        onchange="updateGenericStat(${baseOffset}, ${stat.offset}, '${stat.type}', this.value)"
+                                    >
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderUnlocks(baseOffset) {
+            const renderSection = (title, items, type) => `
+                <div class="mb-6">
+                    <h4 class="text-sm font-bold text-slate-500 uppercase mb-3 border-b border-slate-200 pb-1">${title}</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        ${items.map((item, i) => {
+                            const val = dataView.getUint8(baseOffset + item.byte);
+                            const checked = (val & (1 << item.bit)) !== 0;
+                            return `
+                                <label class="cursor-pointer group select-none">
+                                    <input type="checkbox" class="unlock-checkbox hidden" 
+                                        ${checked ? 'checked' : ''}
+                                        onchange="updateUnlock(${baseOffset}, ${item.byte}, ${item.bit}, this.checked)">
+                                    <div class="border border-slate-300 bg-white rounded p-2 text-center transition-all group-hover:border-blue-400 h-full flex items-center justify-center">
+                                        <div class="text-xs font-bold uppercase status-text">${item.name}</div>
+                                    </div>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            return `
+                ${renderSection('Characters', UNLOCKS.characters, 'characters')}
+                ${renderSection('Vehicles', UNLOCKS.vehicles, 'vehicles')}
+                ${renderSection('Cups / Modes', UNLOCKS.cups, 'cups')}
+            `;
+        }
+
+        function renderUsageList(arr, baseOffset) {
+            return `
+                <div class="space-y-1">
+                    ${arr.map(item => {
+                        const val = dataView.getUint16(baseOffset + item.offset, false);
+                        return `
+                            <div class="flex items-center justify-between text-sm p-1 hover:bg-slate-50 rounded">
+                                <span class="font-medium text-slate-600">${item.name}</span>
+                                <input type="number" 
+                                    class="wii-input w-20 text-right p-0.5 rounded text-xs font-mono"
+                                    value="${val}"
+                                    onchange="updateGenericStat(${baseOffset}, ${item.offset}, 'uint16', this.value)"
+                                >
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // --- Update Functions ---
+
+        window.updateGenericStat = (base, offset, type, valStr) => {
+            const addr = base + offset;
+            if (type === 'float') {
+                dataView.setFloat32(addr, parseFloat(valStr), false);
+            } else if (type === 'int32') {
+                dataView.setInt32(addr, parseInt(valStr), false);
+            } else if (type === 'uint16') {
+                dataView.setUint16(addr, parseInt(valStr), false);
+            }
+        };
+
+        window.updateUnlock = (base, byteOffset, bit, checked) => {
+            const addr = base + byteOffset;
+            let val = dataView.getUint8(addr);
+            if (checked) val |= (1 << bit);
+            else val &= ~(1 << bit);
+            dataView.setUint8(addr, val);
+        };
+
+        window.updateCup = (cupOffset, type, value) => {
+            if (type === 'trophy') {
+                // Offset 0x4F, bits 0-1
+                const addr = cupOffset + 0x4F;
+                let val = dataView.getUint8(addr);
+                val = (val & 0xFC) | (parseInt(value) & 0x03); // Clear last 2 bits, set new
+                dataView.setUint8(addr, val);
+            } else if (type === 'rank') {
+                // Offset 0x51, bits 4-7
+                const addr = cupOffset + 0x51;
+                let val = dataView.getUint8(addr);
+                val = (val & 0x0F) | ((parseInt(value) & 0x0F) << 4); // Clear upper 4, set new
+                dataView.setUint8(addr, val);
+            } else if (type === 'complete') {
+                // Offset 0x52, bit 0
+                const addr = cupOffset + 0x52;
+                let val = dataView.getUint8(addr);
+                if (value) val |= 0x01;
+                else val &= 0xFE;
+                dataView.setUint8(addr, val);
+            }
+        };
+
+        // --- Save ---
+        document.getElementById('save-btn').onclick = () => {
+            dataView.setUint32(CRC_OFFSET, crc32(rawData), false);
+            const b = new Blob([rawData], {type: "application/octet-stream"});
+            const u = URL.createObjectURL(b);
+            const a = document.createElement('a');
+            a.href = u; a.download = "rksys.dat";
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(u);
+        };
+    </script>
+</body>
+</html>

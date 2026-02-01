@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MK8DX Stat Editor</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Chakra Petch', sans-serif;
+            background-color: #f0f0f0;
+            overflow-x: hidden;
+        }
+        
+        /* Loading & Error States */
+        #error-display { display: none; padding: 20px; background: #fee2e2; color: #b91c1c; border-bottom: 2px solid #ef4444; }
+        #loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 24px; color: #666; font-style: italic; }
+
+        /* MK8DX Background Pattern */
+        .mk-bg {
+            background-color: #e5e7eb;
+            background-image: 
+                linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 75%, #ffffff 75%, #ffffff),
+                linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 75%, #ffffff 75%, #ffffff);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            animation: slide 20s linear infinite;
+        }
+
+        @keyframes slide {
+            from { background-position: 0 0, 30px 30px; }
+            to { background-position: 60px 60px, 90px 90px; }
+        }
+
+        .mk-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .mk-tab {
+            transform: skew(-10deg);
+            transition: all 0.2s ease;
+        }
+        
+        .mk-tab-content {
+            transform: skew(10deg);
+        }
+
+        .mk-tab:hover {
+            transform: skew(-10deg) scale(1.05);
+        }
+
+        .mk-tab.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .mk-grid-item {
+            transition: all 0.1s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mk-grid-item:hover {
+            transform: scale(1.05);
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .mk-grid-item.selected {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            z-index: 20;
+        }
+
+        .mk-input {
+            transition: all 0.2s;
+            border: 2px solid #e5e7eb;
+        }
+
+        .mk-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            outline: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Utility for red unused stat */
+        .stat-unused label { color: #dc2626 !important; }
+        .stat-unused input { border-color: #fecaca !important; background-color: #fef2f2 !important; color: #dc2626 !important; }
+    </style>
+</head>
+<body>
+    <div id="error-display"></div>
+    <div id="loading">Loading Editor...</div>
+    <div id="root" style="display:none;"></div>
+
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorDiv = document.getElementById('error-display');
+            const loadingDiv = document.getElementById('loading');
+            errorDiv.style.display = 'block';
+            loadingDiv.style.display = 'none';
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message} <br> <small>Line: ${lineno}</small>`;
+            console.error(error);
+        };
+    </script>
+
+    <script type="text/babel">
+        // --- Data Definitions ---
+
+        const STATS_MAP = [
+            { id: 0, name: "Weight", note: "Affects collisions" },
+            { id: 1, name: "Acceleration", note: "Determines how fast the vehicle increases its speed over time" },
+            { id: 2, name: "On-Road Traction", note: "UNUSED IN MK8DX - NO EFFECT" },
+            { id: 3, name: "Off-Road Traction", note: "Reduces negative effects of slippery terrain" },
+            { id: 4, name: "Mini-Turbo", note: "Determines charge speed, duration and strength" },
+            { id: 5, name: "Top Speed (Ground)", note: "Determines max ground speed" },
+            { id: 6, name: "Top Speed (Water)", note: "Determines max water speed" },
+            { id: 7, name: "Top Speed (Anti-Gravity)", note: "Determines max anti-gravity speed" },
+            { id: 8, name: "Top Speed (Air)", note: "Determines max air speed" },
+            { id: 9, name: "Handling (Ground)", note: "Determines steering and drift capabilities on ground" },
+            { id: 10, name: "Handling (Water)", note: "Determines steering and drift capabilities on water" },
+            { id: 11, name: "Handling (Anti-Gravity)", note: "Determines steering and drift capabilities on anti-gravity" },
+            { id: 12, name: "Handling (Air)", note: "Determines steering and drift capabilities on air" },
+            { id: 13, name: "Invincibility", note: "Determines I-frame duration after hits" },
+        ];
+
+        const CHARACTERS = [
+            "Mario", "Luigi", "Peach", "Daisy", "Yoshi", "Toad", "Toadette", "Koopa Troopa",
+            "Bowser", "Donkey Kong", "Wario", "Waluigi", "Rosalina", "Metal Mario", "Pink Gold Peach",
+            "Lakitu", "Shy Guy", "Baby Mario", "Baby Luigi", "Baby Peach", "Baby Daisy", "Baby Rosalina",
+            "Larry", "Lemmy", "Wendy", "Ludwig", "Iggy", "Roy", "Morton", "Mii (Medium)",
+            "Tanooki Mario", "Link", "Villager (Male)", "Isabelle", "Cat Peach", "Dry Bowser", "Villager (Female)",
+            "Gold Mario", "Dry Bones", "Bowser Jr.", "King Boo", "Inkling Girl", "Inkling Boy", "Link (BOTW)",
+            "Birdo", "Kamek", "Petey Piranha", "Wiggler", "Diddy Kong", "Funky Kong", "Peachette", "Pauline"
+        ];
+
+        const KARTS = [
+            "Standard Kart", "Pipe Frame", "Mach 8", "Steel Driver", "Cat Cruiser", "Circuit Special",
+            "Tri-Speeder", "Badwagon", "Prancer", "Biddy Buggy", "Landship", "Sneeker", "Sports Coupe",
+            "Gold Standard", "Standard Bike", "Comet", "Sport Bike", "The Duke", "Flame Rider", "Varmint",
+            "Mr. Scooty", "Jet Bike", "Yoshi Bike", "Standard ATV", "Wild Wiggler", "Teddy Buggy",
+            "GLA", "W 25 Silver Arrow", "300 SL Roadster", "Blue Falcon", "Tanooki Kart", "B Dasher",
+            "Master Cycle", "Streetle", "P-Wing", "City Tripper", "Bone Rattler", "Koopa Clown",
+            "Splat Buggy", "Inkstriker", "Master Cycle Zero"
+        ];
+
+        const WHEELS = [
+            "Standard", "Monster", "Roller", "Slim", "Slick", "Metal", "Button", "Off-Road",
+            "Sponge", "Wood", "Cushion", "Blue Standard", "Hot Monster", "Azure Roller", "Crimson Slim",
+            "Cyber Slick", "Retro Off-Road", "Gold Tires", "GLA Tires", "Triforce Tires", "Leaf Tires", "Ancient Tires"
+        ];
+
+        const GLIDERS = [
+            "Super Glider", "Cloud Glider", "Wario Wing", "Waddle Wing", "Peach Parasol", "Parachute",
+            "Parafoil", "Flower Glider", "Bowser Kite", "Plane Glider", "MKTV Parafoil", "Gold Glider",
+            "Hylian Kite", "Paper Glider", "Paraglider"
+        ];
+
+        const OFFSETS = {
+            KARTS: 0x1354,
+            CHARACTERS: 0x1C5C,
+            WHEELS: 0x2804,
+            GLIDERS: 0x2CE4
+        };
+
+        const STAT_BLOCK_SIZE = 0x38;
+
+        // --- Custom Icons (Inline SVG for reliability) ---
+        const Icons = {
+            Save: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            ),
+            Upload: () => (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            ),
+            Settings: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            ),
+            User: () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-helmet"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 4a9 9 0 0 1 5.656 16h-11.312a9 9 0 0 1 5.656 -16" /><path d="M20 9h-8.8a1 1 0 0 0 -.968 1.246c.507 2 1.596 3.418 3.268 4.254c2 1 4.333 1.5 7 1.5" /></svg>),
+            Car: () => (<svg width="25" height="25" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M408.29 262.879a35.125 35.125 0 1 0 35.125 35.125 35.17 35.17 0 0 0-35.125-35.125zm0 62.873a27.736 27.736 0 1 1 27.736-27.737 27.736 27.736 0 0 1-27.736 27.748zm8.876-27.737a8.876 8.876 0 1 1-8.876-8.875 8.876 8.876 0 0 1 8.876 8.875zm-265.538 0a35.125 35.125 0 1 0-35.126 35.126 35.17 35.17 0 0 0 35.126-35.126zm-35.126 27.737a27.736 27.736 0 1 1 27.737-27.737 27.736 27.736 0 0 1-27.737 27.748zm345.452-21.823a53.997 53.997 0 1 0-107.617-5.925 53.665 53.665 0 0 0 5.447 23.61H165.008a53.986 53.986 0 1 0-101.849-15.211C37.542 295.64 21 278.033 21 250.186c0-28.846 86.87-69.418 142.122-71.327v34.094a24.83 24.83 0 0 0 24.83 24.83h47.517a24.774 24.774 0 0 0 24.409-20.758s-1.62-21.668-6.813-25.518l3.407-2.54 24.474 28.08h94.104c63.994-.022 115.95 23.42 115.95 52.266 0 13.314-10.973 25.396-29.046 34.616zm-336.576-5.925a8.876 8.876 0 1 1-8.876-8.876 8.876 8.876 0 0 1 8.876 8.887z"/></svg>),
+            Wheel: () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-wheel"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M3 12h6" /><path d="M15 12h6" /><path d="M13.6 9.4l3.4 -4.8" /><path d="M10.4 14.6l-3.4 4.8" /><path d="M7 4.6l3.4 4.8" /><path d="M13.6 14.6l3.4 4.8" /></svg>),
+            Glider: () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-parachute"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 12a10 10 0 1 0 -20 0" /><path d="M22 12c0 -1.66 -1.46 -3 -3.25 -3c-1.8 0 -3.25 1.34 -3.25 3c0 -1.66 -1.57 -3 -3.5 -3s-3.5 1.34 -3.5 3c0 -1.66 -1.46 -3 -3.25 -3c-1.8 0 -3.25 1.34 -3.25 3" /><path d="M2 12l10 10l-3.5 -10" /><path d="M15.5 12l-3.5 10l10 -10" /></svg>),
+            Info: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>),
+            Alert: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>),
+        };
+
+        // --- Sub Components ---
+
+        const TabButton = ({ id, label, icon: Icon, activeTab, onClick }) => (
+            <button
+                onClick={onClick}
+                className={`mk-tab px-6 py-3 rounded-lg font-bold text-lg flex items-center gap-2 border-2 border-transparent ${
+                    activeTab === id 
+                    ? "active" 
+                    : "bg-white text-gray-600 hover:text-blue-600 hover:border-blue-200"
+                }`}
+            >
+                <span className="mk-tab-content flex items-center gap-2">
+                    <Icon />
+                    {label}
+                </span>
+            </button>
+        );
+
+        const GridView = ({ activeTab, selectedItemIndex, onItemSelect }) => {
+            let items = [];
+
+            if (activeTab === 'characters') items = CHARACTERS; 
+            if (activeTab === 'karts') items = KARTS; 
+            if (activeTab === 'wheels') items = WHEELS; 
+            if (activeTab === 'gliders') items = GLIDERS; 
+
+            return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[600px] overflow-y-auto p-2 pr-4">
+                    {items.map((name, idx) => (
+                        <div
+                            key={idx}
+                            onClick={() => onItemSelect(idx)}
+                            className={`mk-grid-item p-3 rounded-lg flex flex-col items-center justify-center text-center gap-2 ${
+                                selectedItemIndex === idx ? 'selected' : 'bg-white'
+                            }`}
+                        >
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden relative ${
+                                selectedItemIndex === idx ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400'
+                            }`}>
+                                {name ? name.substring(0,2) : "??"}
+                            </div>
+                            <span className="text-xs font-bold leading-tight line-clamp-2">{name}</span>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const StatEditor = ({ activeTab, selectedItemIndex, readStat, writeStat }) => {
+            const animationKey = `${activeTab}-${selectedItemIndex}`;
+
+            if (selectedItemIndex === null) return (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 p-10">
+                    <div className="opacity-50 transform scale-150 mb-4"><Icons.Settings /></div>
+                    <p className="text-xl italic">Select an item to edit stats</p>
+                </div>
+            );
+
+            let itemName = "Unknown";
+            if (activeTab === 'characters') itemName = CHARACTERS[selectedItemIndex];
+            if (activeTab === 'karts') itemName = KARTS[selectedItemIndex];
+            if (activeTab === 'wheels') itemName = WHEELS[selectedItemIndex];
+            if (activeTab === 'gliders') itemName = GLIDERS[selectedItemIndex];
+
+            // Warning Logic for Miis
+            let warningMsg = null;
+            if (activeTab === 'characters') {
+                if (selectedItemIndex === 17) warningMsg = "Edits also affect Small-Sized Miis";
+                if (selectedItemIndex === 35) warningMsg = "Edits also affect Large-Sized Miis";
+                if (selectedItemIndex === 29) warningMsg = (
+                    <div className="flex flex-col">
+                        <span>To edit Small-sized Miis, edit Baby Mario</span>
+                        <span>To edit Large-sized Miis, edit Dry Bowser</span>
+                    </div>
+                );
+            }
+
+            return (
+                <div key={animationKey} className="p-6 bg-white/50 rounded-xl border border-white/60 fade-in">
+                    <div className="flex items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+                        <div className="w-16 h-16 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg transform -rotate-3">
+                            <span className="font-bold text-2xl">{itemName ? itemName[0] : "?"}</span>
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black italic text-gray-800 uppercase tracking-tighter">{itemName}</h2>
+                            <div className="flex flex-col gap-1">
+                                <p className="text-sm text-gray-500 font-bold">ID: {selectedItemIndex}</p>
+                                {warningMsg && (
+                                    <div className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded border border-orange-200 flex items-start gap-2 mt-1 w-fit">
+                                        <span className="scale-75 mt-0.5"><Icons.Alert /></span>
+                                        {warningMsg}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {STATS_MAP.map((stat) => {
+                            const isUnused = stat.id === 2;
+                            return (
+                                <div key={stat.id} className={`bg-white p-3 rounded-lg shadow-sm border border-gray-100 ${isUnused ? 'stat-unused' : ''}`}>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-sm font-bold text-gray-700 uppercase flex items-center gap-2">
+                                            {stat.name}
+                                            {isUnused && <span className="text-red-600"><Icons.Alert /></span>}
+                                        </label>
+                                        <span className={`text-xs italic ${isUnused ? 'text-red-500 font-bold' : 'text-gray-400'}`}>{stat.note}</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        value={readStat(activeTab, selectedItemIndex, stat.id)}
+                                        onChange={(e) => writeStat(activeTab, selectedItemIndex, stat.id, parseInt(e.target.value) || 0)}
+                                        className="mk-input w-full p-2 rounded font-mono text-lg font-bold text-blue-600 bg-gray-50"
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const InfoTab = () => (
+            <div className="prose max-w-none text-gray-800 p-6 bg-white rounded-xl shadow-inner">
+                <h2 className="text-3xl font-black italic text-blue-600 mb-6">About Stats</h2>
+                
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
+                            <Icons.Info />
+                            How Stats Work
+                        </h3>
+                        <p className="mb-4 text-gray-600">
+                            Each character, kart, tires, and glider has its own stat values.
+							Your final stats are calculated by adding all four together.
+
+							Some stats (like Speed and Handling) have different values depending on the mode: ground, water, anti-gravity, or gliding. Only the value for the current mode is used while racing.
+
+							Stats are stored as raw numbers, not percentages, and the game is balanced around specific ranges.
+							Maxing every stat can lead to unintended or unrealistic behavior and may not feel the same as a naturally strong combo.
+
+							For best results, tweak stats thoughtfully instead of pushing everything to the maximum.
+                        </p>
+                    </div>
+                    
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                        <h3 className="font-bold text-xl text-red-600 mb-3 flex items-center gap-2">
+                            <span className="text-red-600"><Icons.Alert /></span>
+                            Important Warning
+                        </h3>
+                        <p className="text-sm text-red-700 font-bold mb-2">
+                            DO NOT ATTEMPT TO USE EDITED FILES ONLINE.
+                        </p>
+                        <p className="text-sm text-red-700">
+                            Nintendo has strict checks for <code>Performance.bin</code> (along other files). If your file does not match the server's expected values, you will likely be blocked from matchmaking or banned.
+                            Use this tool for offline fun, local multiplayer, or research ONLY.
+							You've been warned.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Main App ---
+
+        function App() {
+            const [fileData, setFileData] = React.useState(null);
+            const [fileName, setFileName] = React.useState(null);
+            const [activeTab, setActiveTab] = React.useState("characters");
+            const [selectedItemIndex, setSelectedItemIndex] = React.useState(null);
+            const [refreshKey, setRefreshKey] = React.useState(0);
+
+            // --- Binary Logic ---
+            const getOffset = (category) => {
+                switch (category) {
+                    case 'characters': return OFFSETS.CHARACTERS;
+                    case 'karts': return OFFSETS.KARTS;
+                    case 'wheels': return OFFSETS.WHEELS;
+                    case 'gliders': return OFFSETS.GLIDERS;
+                    default: return 0;
+                }
+            };
+
+            const readStat = (category, itemIdx, statIdx) => {
+                if (!fileData) return 0;
+                const base = getOffset(category);
+                const pos = base + (itemIdx * STAT_BLOCK_SIZE) + (statIdx * 4);
+                try {
+                    const view = new DataView(fileData.buffer);
+                    return view.getInt32(pos, true);
+                } catch(e) {
+                    console.error("Read Error:", e);
+                    return 0;
+                }
+            };
+
+            const writeStat = (category, itemIdx, statIdx, value) => {
+                if (!fileData) return;
+                const base = getOffset(category);
+                const pos = base + (itemIdx * STAT_BLOCK_SIZE) + (statIdx * 4);
+                
+                const view = new DataView(fileData.buffer);
+                view.setInt32(pos, value, true);
+                
+                setFileData(new Uint8Array(fileData));
+                setRefreshKey(prev => prev + 1);
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setFileData(new Uint8Array(e.target.result));
+                    setFileName(file.name);
+                    setSelectedItemIndex(null);
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            const handleDownload = () => {
+                if (!fileData) return;
+                const blob = new Blob([fileData], { type: "application/octet-stream" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = fileName || "Performance.bin";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            if (!fileData) {
+                return (
+                    <div className="min-h-screen mk-bg flex flex-col items-center justify-center p-4">
+                        <div className="mk-panel p-10 max-w-2xl w-full text-center transform hover:scale-[1.01] transition-transform duration-500">
+                            <h1 className="text-6xl font-black italic text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-purple-600 mb-2 filter drop-shadow-sm">
+                                MK8DX
+                            </h1>
+                            <h2 className="text-3xl font-bold text-gray-700 mb-8 tracking-widest uppercase">Stat Editor</h2>
+                            
+                            <div className="border-4 border-dashed border-gray-300 rounded-2xl p-12 bg-gray-50 hover:bg-white hover:border-blue-400 transition-colors group cursor-pointer relative">
+                                <input 
+                                    type="file" 
+                                    accept=".bin"
+                                    onChange={handleFileUpload}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <div className="mx-auto mb-4 text-gray-300 group-hover:text-blue-500 transition-colors w-16 h-16 flex items-center justify-center">
+                                    <Icons.Upload />
+                                </div>
+                                <p className="text-xl font-bold text-gray-500 group-hover:text-blue-600">Drop your Performance.bin here</p>
+                                <p className="text-sm text-gray-400 mt-2">or click to browse</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen mk-bg p-4 md:p-8 flex flex-col">
+                    {/* Header */}
+                    <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-gradient-to-br from-blue-600 to-purple-600 text-white p-3 rounded-lg shadow-lg transform -skew-x-12">
+                                <Icons.Settings />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-black italic text-gray-800 uppercase tracking-tighter">MK8DX Stat Editor</h1>
+                                <p className="text-sm font-bold text-gray-500">{fileName}</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handleDownload}
+                            className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 transform transition-transform hover:scale-105 active:scale-95 border-b-4 border-green-700"
+                        >
+                            <Icons.Save />
+                            Save Performance.bin
+                        </button>
+                    </header>
+
+                    {/* Navigation */}
+                    <nav className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
+                        <TabButton id="characters" label="Characters" icon={Icons.User} activeTab={activeTab} onClick={() => { setActiveTab('characters'); setSelectedItemIndex(null); }} />
+                        <TabButton id="karts" label="Karts" icon={Icons.Car} activeTab={activeTab} onClick={() => { setActiveTab('karts'); setSelectedItemIndex(null); }} />
+                        <TabButton id="wheels" label="Wheels" icon={Icons.Wheel} activeTab={activeTab} onClick={() => { setActiveTab('wheels'); setSelectedItemIndex(null); }} />
+                        <TabButton id="gliders" label="Gliders" icon={Icons.Glider} activeTab={activeTab} onClick={() => { setActiveTab('gliders'); setSelectedItemIndex(null); }} />
+                        <TabButton id="info" label="Extra Info" icon={Icons.Info} activeTab={activeTab} onClick={() => { setActiveTab('info'); setSelectedItemIndex(null); }} />
+                    </nav>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 grid md:grid-cols-12 gap-6 min-h-0">
+                        {activeTab === 'info' ? (
+                            <div className="md:col-span-12">
+                                <InfoTab />
+                            </div>
+                        ) : (
+                            <>
+                                {/* Selection List */}
+                                <div className="md:col-span-4 lg:col-span-3 mk-panel p-4 h-fit">
+                                    <div className="flex items-center gap-2 mb-4 pl-2 border-l-4 border-blue-500">
+                                        <h3 className="text-lg font-black italic text-gray-400 uppercase">
+                                            Select {activeTab.slice(0, -1)}
+                                        </h3>
+                                    </div>
+                                    <GridView 
+                                        activeTab={activeTab} 
+                                        selectedItemIndex={selectedItemIndex} 
+                                        onItemSelect={setSelectedItemIndex} 
+                                    />
+                                </div>
+
+                                {/* Editor Panel */}
+                                <div className="md:col-span-8 lg:col-span-9">
+                                    <StatEditor 
+                                        activeTab={activeTab} 
+                                        selectedItemIndex={selectedItemIndex} 
+                                        readStat={readStat} 
+                                        writeStat={writeStat} 
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('root').style.display = 'block';
+        } catch (e) {
+            console.error("Mounting Error:", e);
+            document.getElementById('error-display').style.display = 'block';
+            document.getElementById('error-display').innerHTML = "Critical Error: " + e.message;
+        }
+    </script>
+</body>
+</html>
