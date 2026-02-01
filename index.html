@@ -1,142 +1,414 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <title>THITI!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --bright-cyan: #00f7ff;
+            --bright-magenta: #ff00ea;
+            --toxic-yellow: #e1ff00;
+            --bold-green: #00ff00;
+            
+            --void-black: #050505;
+            --pure-white: #ffffff;
+        }
+
         body {
-            font-family: 'Monument Extended', sans-serif;
-            margin: 0;
-            padding: 0;
+            background-color: var(--toxic-yellow);
+            color: var(--void-black);
+            font-family: 'Space Mono', monospace;
+            overflow-x: hidden;
+            cursor: none;
         }
 
-        #overlay, .bio, h1, p {
-            font-family: 'Monument Extended', sans-serif;
-        }
-
-        #overlay {
+        .cursor-dot {
+            width: 24px;
+            height: 24px;
+            background-color: var(--void-black);
             position: fixed;
             top: 0;
             left: 0;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        
+        .cursor-outline {
+            width: 64px;
+            height: 64px;
+            border: 4px solid var(--void-black);
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, border-color 0.2s, transform 0.1s;
+        }
+
+        .stretch-font {
+            font-family: 'Archivo Black', sans-serif;
+            transform: scaleY(1.3); 
+            transform-origin: center;
+            line-height: 0.9;
+            letter-spacing: -0.05em;
+        }
+
+        .marquee-wrapper {
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            background: var(--void-black);
+            margin: 6rem 0;
+            position: relative;
+            z-index: 30;
+            padding: 1rem 0;
+        }
+
+        .marquee-track {
+            display: flex;
+            width: fit-content;
+            animation: scroll-left 30s linear infinite;
+        }
+
+        .marquee-content {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: 3rem;
+            text-transform: uppercase;
+            color: var(--toxic-yellow);
+            white-space: nowrap;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #8e00c2;
-            font-size: 24px;
-            cursor: pointer;
+        }
+        
+        .marquee-content span {
+            padding: 0 3rem;
         }
 
-        #overlay p {
-            margin: 0;
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } 
         }
 
-        .container {
-            background: rgba(255, 255, 255, 1.0);
-            padding: 20px;
-            border-radius: 20px;
-            text-align: center;
+        .project-item {
+            border-bottom: 6px solid var(--void-black);
+            padding: 60px 20px; 
+            position: relative;
+            z-index: 20;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: none;
+            display: block; 
+            text-decoration: none;
         }
 
-        .bio {
-            max-width: 600px;
-            margin: auto;
+        .project-item:hover {
+            background-color: var(--void-black);
+            color: var(--toxic-yellow);
         }
 
-        .profile-circle {
-            border-radius: 50%;
-            overflow: hidden;
-            width: 150px; /* Adjust the size of the circle */
-            height: 150px;
-            margin: 0 auto 20px;
+        .project-item:hover h3 {
+            color: var(--bright-cyan);
+            -webkit-text-stroke: 0;
         }
 
-        .profile-circle img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
+        .project-item:hover p {
+            color: var(--pure-white);
+            opacity: 1;
         }
 
-        h1 {
-            color: #000;
+        .launch-badge {
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s ease;
+            color: var(--bright-magenta);
+            font-weight: bold;
+            font-family: 'Space Mono', monospace;
+            border: 2px solid var(--bright-magenta);
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            margin-top: 1rem;
+            background: black;
         }
 
-        .social-icons img {
-            width: 30px;
-            height: 30px;
-            margin: 0 5px;
+        .project-item:hover .launch-badge {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .scroll-indicator {
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        .brutal-btn {
+            background: var(--void-black);
+            color: var(--toxic-yellow);
+            border: none;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 1.5rem 3rem;
+            font-family: 'Space Mono', monospace;
+            cursor: none;
+            transition: all 0.1s;
+            display: inline-block;
+            border: 4px solid var(--void-black);
+            box-shadow: 8px 8px 0px var(--bright-magenta);
+        }
+
+        .brutal-btn:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 12px 12px 0px var(--pure-white);
+            background: var(--pure-white);
+            color: var(--void-black);
+        }
+
+        /* Section Backgrounds */
+        .section-contrast {
+            background-color: var(--void-black); /* Changed to Black */
+            color: var(--pure-white); /* Changed to White */
+            border-top: 8px solid var(--void-black);
+            border-bottom: 8px solid var(--void-black);
+        }
+
+        .section-black {
+            background-color: var(--void-black);
+            color: var(--bright-magenta);
+            border-top: 8px solid var(--bright-magenta);
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--void-black);
+            color: var(--toxic-yellow);
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 20;
         }
     </style>
-    <title>thi's bio</title>
 </head>
-<body>
-    <div id="overlay">
-        <p>click anywhere.</p>
-    </div>
+<body class="min-h-screen flex flex-col">
 
-    <div class="container">
-        <div class="bio">
-            <div class="profile-circle">
-                <img src="pfp.jpg" alt="thi">
+    <div class="cursor-dot hidden md:block"></div>
+    <div class="cursor-outline hidden md:block"></div>
+
+    <main class="w-full">
+        
+        <header class="min-h-screen flex flex-col justify-center px-6 md:px-12 relative content-layer pt-20 pb-20">
+            <div class="flex-grow flex flex-col justify-center">
+                <h1 class="text-[clamp(4rem,15vw,13rem)] leading-[0.85] stretch-font uppercase break-words relative z-10 text-black mix-blend-darken mb-8">
+                    EU<br>
+					CRIO<br>
+                    <span class="text-[var(--bright-magenta)]" style="-webkit-text-stroke: 5px black; paint-order: stroke fill;">DE TUDO</span>
+                </h1>
             </div>
-            <h1>thi</h1>
-            <p>19, brazil</p>
-            <div class="social-icons">
-                <!-- Add your social icons here with appropriate links -->
-                <a href="https://www.instagram.com/thitiiiiiiiiiiiiiiiiiiiiiiiiii" target="_blank"><img src="instagram-icon.png" alt="Instagram"></a>
-                <a href="https://open.spotify.com/user/31j4zzn3dgfwpdguc5omn3y4jyia" target="_blank"><img src="spotify-icon.png" alt="Spotify"></a>
-                <!-- Add more social icons as needed -->
+
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer group" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})">
+                <svg class="w-16 h-16 text-black scroll-indicator" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="4" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+        </header>
+
+        <div class="marquee-wrapper content-layer">
+            <div class="marquee-track">
+                <div class="marquee-content">
+                    <span>/// QUEM NÃO ARRISCA, NÃO PETISCA</span>
+                    <span>/// SE VOCÊ PENSAR DEMAIS, VAI ACABAR NÃO FAZENDO</span>
+                    <span>/// "PREGUIÇA" É UM MODO DE PENSAR QUE FAZ VOCÊ SE PREOCUPAR MAIS COM O TRABALHO DO QUE COM O RESULTADO</span>
+                    <span>/// 60 E FAZ. SE NÃO DER, 70 DE NOVO</span>
+                    <span>/// AAAAAAAAAAAAA</span>
+                </div>
+                <div class="marquee-content">
+                    <span>/// QUEM NÃO ARRISCA, NÃO PETISCA</span>
+                    <span>/// SE VOCÊ PENSAR DEMAIS, VAI ACABAR NÃO FAZENDO</span>
+                    <span>/// "PREGUIÇA" É UM MODO DE PENSAR QUE FAZ VOCÊ SE PREOCUPAR MAIS COM O TRABALHO DO QUE COM O RESULTADO</span>
+                    <span>/// 60 E FAZ. SE NÃO DER, 70 DE NOVO</span>
+                    <span>/// AAAAAAAAAAAAA</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <audio id="bgAudio">
-        Your browser does not support the audio tag.
-    </audio>
+        <section id="about" class="section-contrast py-32 relative content-layer">
+            <div class="max-w-[1600px] mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 
-    <ul id="playlist" style="display: none;">
-        <!-- Add more songs as needed -->
-        <li data-src="songs/bg.mp3"></li>
-        <li data-src="songs/bg2.mp3"></li>
-        <li data-src="songs/bg3.mp3"></li>
-        <!-- Add more songs with their titles and sources -->
-    </ul>
+                <div class="relative group mx-auto w-full max-w-md">
+                    <div class="absolute inset-0 bg-[var(--bright-magenta)] translate-x-4 translate-y-4 border-4 border-white"></div>
+                    <div class="absolute inset-0 bg-[var(--toxic-yellow)] -translate-x-4 -translate-y-4 border-4 border-white z-0"></div>
+                    <div class="relative z-10 aspect-square border-4 border-white bg-black flex items-center justify-center overflow-hidden hover:scale-95 transition-transform duration-100">
+                         <img src="pfp.jpg" alt="Profile" class="absolute inset-0 w-full h-full object-cover z-20" onerror="this.style.display='none'">
+                         
+                         <svg class="w-full h-full text-white bg-black relative z-10" width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <pattern id="grid-inv" width="10" height="10" patternUnits="userSpaceOnUse">
+                                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/>
+                                </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#grid-inv)" />
+                            <circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="2" />
+                            <line x1="20" y1="20" x2="80" y2="80" stroke="white" stroke-width="2" />
+                            <line x1="80" y1="20" x2="20" y2="80" stroke="white" stroke-width="2" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="space-y-8">
+                    <h2 class="text-6xl md:text-8xl font-black stretch-font uppercase leading-[0.8] font-['Archivo_Black']">
+                        INTERESSES<br>
+                        <span class="text-[var(--bright-cyan)]" style="-webkit-text-stroke: 0px black;">INFINITOS</span>.
+                    </h2>
+                    <p class="text-xl md:text-2xl font-bold font-mono leading-tight border-l-8 border-[var(--toxic-yellow)] pl-6 text-gray-200">
+                        EU SOU APAIXONADO POR FAZER OS MAIS VARIADOS TIPOS DE PROJETOS. 
+                        ESQUECE ESSE NEGÓCIO DE SER "O MELHOR" EM UMA COISA. 
+                        EU QUERO SER BOM EM <span class="bg-[var(--toxic-yellow)] text-black px-2">TUDO</span>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="work" class="py-40 px-6 md:px-12 bg-white relative content-layer min-h-screen">
+            <div class="max-w-[1600px] mx-auto">
+                <div class="flex items-end justify-between border-b-[8px] border-black mb-16 pb-4">
+                    <h2 class="text-[clamp(3rem,10vw,10rem)] stretch-font text-black">PROJETOS</h2>
+                    <span class="font-mono font-black text-2xl bg-[var(--bold-green)] border-2 border-black p-2 hidden md:block">
+                        VAI TOMANDO
+                    </span>
+                </div>
+                
+                <div id="project-list" class="flex flex-col">
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section-black py-40 text-center relative overflow-hidden">
+            
+            <div class="relative z-10">
+                <div class="inline-block group">
+                    <h2 class="text-[clamp(4rem,15vw,15rem)] stretch-font leading-none mb-12 origin-center transition-transform duration-300 group-hover:scale-110 group-hover:text-[var(--bright-cyan)] cursor-default select-none">
+                        SACOU?
+                    </h2>
+                </div>
+                
+                <div class="flex justify-center gap-6 flex-wrap px-4 mt-8">
+                    <button onclick="copyDiscord(this)" class="brutal-btn text-xl md:text-2xl">DISCORD</button>
+                    <a href="https://www.youtube.com/@thisarchive" class="brutal-btn text-xl md:text-2xl">YOUTUBE</a>
+                    <a href="https://www.instagram.com/thitiiiiiiiiiiiiiiiiiiiiiiiiii" class="brutal-btn text-xl md:text-2xl">INSTAGRAM</a>
+                    <a href="https://github.com/visibou" class="brutal-btn text-xl md:text-2xl">GITHUB</a>
+                </div>
+            </div>
+        </section>
+
+    </main>
 
     <script>
-        document.body.addEventListener('click', function () {
-            var overlay = document.getElementById('overlay');
-            overlay.style.display = 'none';
-            var audio = document.getElementById('bgAudio');
-            var playlist = document.getElementById('playlist');
-            var currentSong = 0;
 
-            function playSong(index) {
-                if (index < playlist.children.length) {
-                    var song = playlist.children[index];
-                    audio.src = song.getAttribute('data-src');
-                    audio.play();
-                    currentSong = index;
-                }
+        const projects = [
+            {
+                title: "PORTAL",
+                description: "Um sintetizador com controles visuais feito com Tone.JS.",
+                link: "https://visibou.github.io/portal"
+            },
+            {
+                title: "WIIZARD",
+                description: "Um editor de save data para Mario Kart Wii.",
+                link: "https://visibou.github.io/wiizard"
+            },
+            {
+                title: "STATEDIT",
+                description: "Um editor de Performance.bin para Mario Kart 8 Deluxe.",
+                link: "https://visibou.github.io/statedit"
+            },
+			{
+                title: "CERTIFICATOR",
+                description: "Um script para Photoshop que automatiza a criação de certificados de presença.",
+                link: "https://raw.githubusercontent.com/visibou/visibou.github.io/refs/heads/main/certificator.jsx"
             }
+        ];
 
-            playSong(currentSong);
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
 
-            audio.addEventListener('ended', function () {
-                currentSong++;
-                if (currentSong >= playlist.children.length) {
-                    // If we reach the end of the playlist, reset to the first song
-                    currentSong = 0;
-                }
-                playSong(currentSong);
-            });
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
 
-            document.body.removeEventListener('click', arguments.callee);
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            cursorOutline.style.left = `${posX}px`;
+            cursorOutline.style.top = `${posY}px`;
+
+            const hovered = document.elementFromPoint(posX, posY);
+            const isClickable = hovered?.closest('a') || hovered?.closest('button') || hovered?.closest('.project-item') || hovered?.closest('.cursor-pointer');
+
+            if (isClickable) {
+                cursorOutline.style.transform = `translate(-50%, -50%) scale(1.5)`;
+                cursorOutline.style.borderColor = 'var(--bright-magenta)';
+                cursorOutline.style.borderWidth = '2px';
+                cursorDot.style.backgroundColor = 'var(--bright-magenta)';
+            } else {
+                cursorOutline.style.transform = `translate(-50%, -50%) scale(1)`;
+                cursorOutline.style.borderColor = 'var(--void-black)';
+                cursorOutline.style.borderWidth = '4px';
+                cursorDot.style.backgroundColor = 'var(--void-black)';
+            }
         });
+
+        const projectList = document.getElementById('project-list');
+
+        projects.forEach((p, i) => {
+            const item = document.createElement('a');
+            item.href = p.link; 
+            item.className = 'project-item group';
+            
+            item.innerHTML = `
+                <div class="w-full flex flex-col md:flex-row justify-between items-start md:items-center pointer-events-none">
+                    <div class="md:w-2/3">
+                        <h3 class="text-[clamp(2.5rem,5vw,5rem)] font-black stretch-font uppercase transition-all duration-200 font-['Archivo_Black'] leading-[0.9]">
+                            ${p.title}
+                        </h3>
+                        <p class="mt-4 font-mono text-lg md:text-xl leading-tight opacity-70 group-hover:text-white group-hover:opacity-100 transition-all">
+                            // ${p.description}
+                        </p>
+                    </div>
+                    
+                    <div class="launch-badge">
+                        [ ABRIR ]
+                    </div>
+                </div>
+            `;
+            projectList.appendChild(item);
+        });
+
+        function copyDiscord(btnElement) {
+            const originalText = btnElement.innerText;
+            navigator.clipboard.writeText('@thitii').then(() => {
+                btnElement.innerText = "COPIADO!";
+                btnElement.style.backgroundColor = "var(--pure-white)";
+                btnElement.style.color = "var(--void-black)";
+                
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.style.backgroundColor = "";
+                    btnElement.style.color = "";
+                }, 2000);
+            }).catch(err => {
+                console.error('Pior que não deu pra copiar o texto: ', err);
+            });
+        }
     </script>
 </body>
 </html>
-
