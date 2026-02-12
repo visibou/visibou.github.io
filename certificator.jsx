@@ -12,7 +12,7 @@ var outputFolderPath = "LOCAL PARA SALVAR OS CERTIFICADOS CRIADOS";
 
 function main() {
     if (!app.documents.length) {
-        alert("Please open the template Photoshop file first.");
+        alert("Por favor abra um arquivo antes.");
         return;
     }
 
@@ -102,5 +102,6 @@ function splitLines(str) {
     }
     return lines;
 }
+
 
 main();
