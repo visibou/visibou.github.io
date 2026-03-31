@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Marcas</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+        @font-face {
+            font-family: 'Cal Sans';
+            src: url('https://cdn.jsdelivr.net/npm/cal-sans@1.0.1/fonts/CalSans-SemiBold.woff2') format('woff2');
+            font-weight: 600;
+            font-style: normal;
+        }
+        .font-cal { font-family: 'Cal Sans', sans-serif; }
+        .font-dm { font-family: 'DM Sans', sans-serif; }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+        }
+    </style>
+</head>
+<body>
+    <div id="root" class="w-full h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const SearchIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        );
+        const ZoomInIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        );
+        const ZoomOutIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+        );
+        const MaximizeIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        );
+        const TargetIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        );
+
+        // --- DADOS DO MERCADO BRASILEIRO (LISTA CURADA) ---
+        const marketData = [
+          {
+            name: "Unilever",
+            brands: [
+              { name: "Ala", category: "Limpeza" }, { name: "Arisco", category: "Alimentação" }, { name: "Axe", category: "Higiene" },
+              { name: "Brilhante", category: "Limpeza" }, { name: "Cif", category: "Limpeza" }, { name: "CLEAR", category: "Higiene" },
+              { name: "Closeup", category: "Higiene" }, { name: "Comfort", category: "Limpeza" }, { name: "Dove", category: "Higiene" },
+              { name: "Fofo", category: "Limpeza" }, { name: "Hellmann’s", category: "Alimentação" }, { name: "Knorr", category: "Alimentação" },
+              { name: "Liquid I.V.", category: "Saúde" }, { name: "Lux", category: "Higiene" }, { name: "Maizena", category: "Alimentação" },
+              { name: "Mãe Terra", category: "Alimentação" }, { name: "OMO", category: "Limpeza" }, { name: "Rexona", category: "Higiene" },
+              { name: "Seda", category: "Higiene" }, { name: "Surf", category: "Limpeza" }, { name: "TRESemmé", category: "Higiene" },
+              { name: "Vasenol", category: "Higiene" }, { name: "Vim", category: "Limpeza" },
+              { name: "Kibon", category: "Gelado" }, { name: "Magnum", category: "Gelado" }, { name: "Cornetto", category: "Gelado" },
+              { name: "Fruttare", category: "Gelado" }, { name: "Chicabon", category: "Gelado" }, { name: "Tablito", category: "Gelado" },
+              { name: "Suave", category: "Higiene" }, { name: "FDS", category: "Higiene" }, { name: "Campeiro", category: "Limpeza" }
+            ]
+          },
+          {
+            name: "P&G",
+            brands: [
+              { name: "Aussie", category: "Higiene" }, { name: "Head & Shoulders", category: "Higiene" }, { name: "Herbal Essences", category: "Higiene" },
+              { name: "Old Spice", category: "Higiene" }, { name: "Downy", category: "Limpeza" }, { name: "Pantene", category: "Higiene" },
+              { name: "Always", category: "Higiene" }, { name: "Pampers", category: "Higiene" }, { name: "Ariel", category: "Limpeza" },
+              { name: "Gillette", category: "Higiene" }, { name: "Oral-B", category: "Higiene" }, { name: "Vick", category: "Saúde" },
+              { name: "Clearblue", category: "Saúde" }, { name: "Metamucil", category: "Saúde" },
+              { name: "Hipoglós", category: "Saúde" }, { name: "Tampax", category: "Higiene" }, { name: "Naturella", category: "Higiene" },
+              { name: "Venus", category: "Higiene" }, { name: "Braun", category: "Higiene" }, { name: "Bion3", category: "Saúde" }
+            ]
+          },
+          {
+            name: "Mondelez",
+            brands: [
+              { name: "BelVita", category: "Bolacha" }, { name: "BIS", category: "Chocolate" }, { name: "Bubbaloo", category: "Doce" },
+              { name: "Chiclets", category: "Doce" }, { name: "Clight", category: "Bebida" }, { name: "Club Social", category: "Bolacha" },
+              { name: "Diamante Negro", category: "Chocolate" }, { name: "Fresh", category: "Bebida" }, { name: "Halls", category: "Doce" },
+              { name: "Lacta", category: "Chocolate" }, { name: "Laka", category: "Chocolate" }, { name: "Oreo", category: "Bolacha" },
+              { name: "Ouro Branco", category: "Chocolate" }, { name: "Shot", category: "Chocolate" }, { name: "Sonho de Valsa", category: "Chocolate" },
+              { name: "Tang", category: "Bebida" }, { name: "Trakinas", category: "Bolacha" }, { name: "Trident", category: "Doce" },
+              { name: "5Star", category: "Chocolate" }, { name: "Bon Gouter", category: "Bolacha" }, { name: "Amandita", category: "Chocolate" },
+              { name: "7Days", category: "Alimentação" },
+              { name: "Royal", category: "Culinária" }, { name: "Philadelphia", category: "Lacticínios" }, { name: "Milka", category: "Chocolate" },
+              { name: "Toblerone", category: "Chocolate" }, { name: "Chocooky", category: "Bolacha" }, { name: "Clorets", category: "Doce" }
+            ]
+          },
+          {
+            name: "PepsiCo",
+            brands: [
+              { name: "Baconzitos", category: "Snack" }, { name: "Cebolitos", category: "Snack" }, { name: "Cheetos", category: "Snack" },
+              { name: "Doritos", category: "Snack" }, { name: "eQlibri", category: "Snack" }, { name: "Fandangos", category: "Snack" },
+              { name: "Fofura", category: "Snack" }, { name: "Kero Coco", category: "Bebida" }, { name: "Lay’s", category: "Snack" },
+              { name: "Pingo d’Ouro", category: "Snack" }, { name: "Pop Corners", category: "Snack" }, { name: "Quaker", category: "Alimentação" },
+              { name: "Ruffles", category: "Snack" }, { name: "Stiksy", category: "Snack" },
+              { name: "Toddy", category: "Bebida" }, { name: "Toddynho", category: "Bebida" }, { name: "Torcida", category: "Snack" },
+              { name: "Tostitos", category: "Snack" },
+              { name: "Sensações", category: "Snack" }, { name: "H2OH!", category: "Bebida" }, { name: "Gatorade", category: "Bebida" },
+              { name: "De Todão", category: "Snack" }, { name: "Lipton", category: "Bebida" }
+            ]
+          },
+          {
+            name: "Coca Cola",
+            brands: [
+              { name: "Coca Cola", category: "Bebida" }, { name: "Sprite", category: "Bebida" }, { name: "Fanta", category: "Bebida" },
+              { name: "Schweppes", category: "Bebida" }, { name: "Crystal", category: "Bebida" }, { name: "Kuat", category: "Bebida" },
+              { name: "Del Valle", category: "Bebida" }, { name: "Ades", category: "Bebida" }, { name: "Leão", category: "Bebida" },
+              { name: "Powerade", category: "Bebida" },
+              { name: "Guaraná Jesus", category: "Bebida" }, { name: "Kapo", category: "Bebida" }, { name: "Aquarius", category: "Bebida" },
+              { name: "Monster", category: "Bebida" }, { name: "Burn", category: "Bebida" }, { name: "Topo Chico", category: "Bebida" },
+              { name: "Taí", category: "Bebida" }, { name: "Simba", category: "Bebida" }, { name: "Charrua", category: "Bebida" }
+            ]
+          },
+          {
+            name: "Nestlé",
+            brands: [
+              { name: "Nescau", category: "Bebida" }, { name: "Nesquik", category: "Bebida" }, { name: "Nescafé", category: "Café" },
+              { name: "Nespresso", category: "Café" }, { name: "Dolce Gusto", category: "Café" }, { name: "Starbucks Coffee At Home", category: "Café" },
+              { name: "Corn Flakes", category: "Cereais" }, { name: "Crunch Cereal", category: "Cereais" }, { name: "Farinha Láctea", category: "Cereais" },
+              { name: "KitKat Cereal", category: "Cereais" }, { name: "Moça Flakes", category: "Cereais" }, { name: "Nescau Cereal", category: "Cereais" },
+              { name: "Nesfit Cereal", category: "Cereais" }, { name: "Negresco Cereal", category: "Cereais" }, { name: "Aveia Nestlé", category: "Cereais" },
+              { name: "Neston", category: "Cereais" }, { name: "Snow Flakes", category: "Cereais" }, { name: "KitKat", category: "Chocolate" },
+              { name: "Suflair", category: "Chocolate" }, { name: "Talento", category: "Chocolate" }, { name: "Dois Frades", category: "Chocolate" },
+              { name: "Crunch", category: "Chocolate" }, { name: "Nestlé Classic", category: "Chocolate" }, { name: "Alpino", category: "Chocolate" },
+              { name: "Garoto", category: "Chocolate" }, { name: "Prestígio", category: "Chocolate" }, { name: "Serenata do Amor", category: "Chocolate" },
+              { name: "Choco Trio", category: "Chocolate" }, { name: "Galak", category: "Chocolate" }, { name: "Sensação", category: "Chocolate" },
+              { name: "Charge", category: "Chocolate" }, { name: "Crocante", category: "Chocolate" }, { name: "Molico", category: "Lacticínios" },
+              { name: "Ninho", category: "Lacticínios" }, { name: "Fiber Mais", category: "Nutrição" }, { name: "Baby & Me", category: "Nutrição" },
+              { name: "Nutren", category: "Nutrição" }, { name: "Passatempo", category: "Bolacha" }, { name: "Negresco", category: "Bolacha" },
+              { name: "Bono", category: "Bolacha" }, { name: "Tostines", category: "Bolacha" }, { name: "Nesfit", category: "Bolacha" },
+              { name: "Alpo", category: "Pet" }, { name: "Bonzo", category: "Pet" }, { name: "Cat Chow", category: "Pet" },
+              { name: "Detalife", category: "Pet" }, { name: "Dog Chow", category: "Pet" }, { name: "Doguitos", category: "Pet" },
+              { name: "Fancy Feast", category: "Pet" }, { name: "Felix", category: "Pet" }, { name: "Friskies", category: "Pet" },
+              { name: "Gatsy", category: "Pet" }, { name: "Kanina", category: "Pet" }, { name: "Pro Plan", category: "Pet" },
+              { name: "One", category: "Pet" }, { name: "Tidy Cats", category: "Pet" }, { name: "Mucilon", category: "Infantil" },
+              { name: "Nestonutri", category: "Infantil" }, { name: "Neslac", category: "Infantil" }, { name: "Nanlac", category: "Infantil" },
+              { name: "Nancare", category: "Infantil" }, { name: "Alfaré", category: "Fórmula" }, { name: "Alfamino", category: "Fórmula" },
+              { name: "Nestlé NAN", category: "Fórmula" }, { name: "Nestogeno", category: "Fórmula" }, { name: "Moça", category: "Culinária" },
+              { name: "Creme de Leite Nestlé", category: "Culinária" }, { name: "Maggi", category: "Culinária" }, { name: "Especialidades", category: "Gelado" },
+              { name: "LaFrutta", category: "Gelado" }, { name: "Mega", category: "Gelado" },
+              { name: "Chamyto", category: "Lacticínios" }, { name: "Chambinho", category: "Lacticínios" }, { name: "Ninho Fases", category: "Lacticínios" },
+              { name: "Calipso", category: "Bolacha" }, { name: "Fondor", category: "Culinária" }
+            ]
+          },
+          {
+            name: "Ambev",
+            brands: [
+              { name: "Corona", category: "Cerveja" }, { name: "Spaten", category: "Cerveja" }, { name: "Original", category: "Cerveja" },
+              { name: "Budweiser", category: "Cerveja" }, { name: "Brahma", category: "Cerveja" }, { name: "Skol", category: "Cerveja" },
+              { name: "Stella Artois", category: "Cerveja" }, { name: "Flying Fish", category: "Cerveja" }, { name: "Antarctica", category: "Cerveja" },
+              { name: "Beck’s", category: "Cerveja" }, { name: "Berrió", category: "Cerveja" }, { name: "Bohemia", category: "Cerveja" },
+              { name: "Caracu", category: "Cerveja" }, { name: "Colorado", category: "Cerveja" }, { name: "Esmera", category: "Cerveja" },
+              { name: "Franziskaner", category: "Cerveja" }, { name: "Goose Island", category: "Cerveja" }, { name: "Hoegaarden", category: "Cerveja" },
+              { name: "Leffe", category: "Cerveja" }, { name: "Legítima", category: "Cerveja" }, { name: "Michelob Ultra", category: "Cerveja" },
+              { name: "Modelo", category: "Cerveja" }, { name: "Nossa", category: "Cerveja" }, { name: "Patagonia", category: "Cerveja" },
+              { name: "Polar", category: "Cerveja" }, { name: "Serramalte", category: "Cerveja" }, { name: "Serrana", category: "Cerveja" },
+              { name: "Wäls", category: "Cerveja" }, { name: "Beats", category: "Bebida" }, { name: "Brutal Fruit", category: "Bebida" },
+              { name: "Mike’s", category: "Bebida" }, { name: "Guaraná", category: "Bebida" }, { name: "Pepsi", category: "Bebida" },
+              { name: "Tônica", category: "Bebida" }, { name: "Soda Limonada", category: "Bebida" }, { name: "Sukita", category: "Bebida" },
+              { name: "H2OH!", category: "Bebida" }, { name: "Água Ama", category: "Bebida" }, { name: "Gatorade", category: "Bebida" },
+              { name: "Lipton", category: "Bebida" },
+              { name: "Zé Delivery", category: "Serviço" }, { name: "Baré", category: "Bebida" }, { name: "Guaraná Ant. Black", category: "Bebida" }
+            ]
+          },
+          {
+            name: "JBS",
+            brands: [
+              { name: "1953", category: "Carnes" }, { name: "Black", category: "Carnes" }, { name: "Bordon", category: "Carnes" },
+              { name: "Delícia", category: "Lacticínios" }, { name: "Do Chef", category: "Carnes" }, { name: "Doriana", category: "Lacticínios" },
+              { name: "Eder", category: "Carnes" }, { name: "Friboi", category: "Carnes" }, { name: "Hans", category: "Carnes" },
+              { name: "Happy Eggs", category: "Alimentação" }, { name: "Incrível!", category: "Alimentação" }, { name: "Marba", category: "Carnes" },
+              { name: "Massa Leve", category: "Alimentação" }, { name: "Maturatta", category: "Carnes" }, { name: "Primor", category: "Lacticínios" },
+              { name: "Rezende", category: "Carnes" }, { name: "Seara", category: "Carnes" }, { name: "Seara Gourmet", category: "Carnes" },
+              { name: "Swift", category: "Carnes" },
+              { name: "Salada", category: "Alimentação" }, { name: "LeBon", category: "Carnes" }, { name: "Frangosul", category: "Carnes" },
+              { name: "Anglo", category: "Carnes" }, { name: "Excelsior", category: "Carnes" }, { name: "Cremosy", category: "Lacticínios" }
+            ]
+          },
+          {
+            name: "BRF",
+            brands: [
+              { name: "Sadia", category: "Carnes" }, { name: "Perdigão", category: "Carnes" }, { name: "Qualy", category: "Lacticínios" },
+              { name: "Claybom", category: "Lacticínios" }, { name: "Deline", category: "Lacticínios" }, { name: "Gran Plus", category: "Pet" },
+              { name: "Chester", category: "Carnes" }, { name: "Hot Pocket", category: "Alimentação" }, { name: "Miss Daisy", category: "Sobremesa" },
+              { name: "Kidelli", category: "Carnes" }, { name: "Fazenda", category: "Carnes" }
+            ]
+          },
+          {
+            name: "M. Dias Branco",
+            brands: [
+              { name: "Adria", category: "Massa" }, { name: "Adorita", category: "Bolacha" }, { name: "Basilar", category: "Massa" },
+              { name: "Bonsabor", category: "Massa" }, { name: "Delicitos", category: "Snack" }, { name: "Estrela", category: "Massa" },
+              { name: "Finna", category: "Farinha" }, { name: "Fit Food", category: "Alimentação" }, { name: "Fortaleza", category: "Massa" },
+              { name: "Frontera", category: "Snack" }, { name: "Isabela", category: "Massa" }, { name: "Jasmine", category: "Alimentação" },
+              { name: "las Acacias", category: "Massa" }, { name: "Medalha de Ouro", category: "Farinha" }, { name: "Pilar", category: "Bolacha" },
+              { name: "Piraquê", category: "Bolacha" }, { name: "Puro Sabor", category: "Lacticínios" }, { name: "Richester", category: "Bolacha" },
+              { name: "Salsitos", category: "Snack" }, { name: "Smart", category: "Alimentação" }, { name: "Vitarella", category: "Bolacha" },
+              { name: "Zabet", category: "Bolacha" },
+              { name: "Petybon", category: "Massa" }, { name: "Pelicano", category: "Massa" }, { name: "Animados Zoo", category: "Bolacha" },
+              { name: "Treloso", category: "Bolacha" }
+            ]
+          },
+          {
+            name: "Danone",
+            brands: [
+              { name: "Danone", category: "Lacticínios" }, { name: "Activia", category: "Lacticínios" }, { name: "Danoninho", category: "Lacticínios" },
+              { name: "Actimel", category: "Lacticínios" }, { name: "Aptamil", category: "Nutrição" }, { name: "Milupa", category: "Nutrição" }, 
+              { name: "YoPRO", category: "Lacticínios" }, { name: "Corpus", category: "Lacticínios" }, { name: "Milnutri", category: "Nutrição" },
+              { name: "Danette", category: "Sobremesa" }, { name: "Silk", category: "Bebida" }, { name: "Paulista", category: "Lacticínios" },
+              { name: "Bonafont", category: "Bebida" }, { name: "Evian", category: "Bebida" }
+            ]
+          },
+          {
+            name: "J&J",
+            brands: [
+              { name: "Listerine", category: "Higiene" }, { name: "Sundown", category: "Saúde" }, { name: "Band-Aid", category: "Saúde" },
+              { name: "Tylenol", category: "Saúde" }, { name: "Cotonetes", category: "Higiene" }, { name: "Johnson's Baby", category: "Higiene" },
+              { name: "Neutrogena", category: "Higiene" }, { name: "Neostrata", category: "Higiene" }, { name: "Carefree", category: "Higiene" },
+              { name: "OB", category: "Higiene" }, { name: "Sempre Livre", category: "Higiene" }
+            ]
+          },
+          {
+            name: "Colgate",
+            brands: [
+              { name: "Colgate", category: "Higiene" }, { name: "Sorriso", category: "Higiene" }, { name: "Palmolive", category: "Higiene" },
+              { name: "Protex", category: "Higiene" }, { name: "Pinho Sol", category: "Limpeza" }, { name: "Ajax", category: "Limpeza" },
+              { name: "Tandy", category: "Higiene" }, { name: "Elmex", category: "Higiene" }
+            ]
+          },
+          {
+            name: "Heineken",
+            brands: [
+              { name: "Heineken", category: "Cerveja" }, { name: "Amstel", category: "Cerveja" }, { name: "Devassa", category: "Cerveja" },
+              { name: "Schin", category: "Cerveja" }, { name: "Kaiser", category: "Cerveja" }, { name: "Eisenbahn", category: "Cerveja" },
+              { name: "Glacial", category: "Cerveja" }, { name: "Bavaria", category: "Cerveja" }, { name: "Itubaína", category: "Bebida" },
+              { name: "Sol", category: "Cerveja" }, { name: "Lagunitas", category: "Cerveja" }
+            ]
+          },
+          {
+            name: "Lactalis",
+            brands: [
+              { name: "Parmalat", category: "Lacticínios" }, { name: "Batavo", category: "Lacticínios" }, { name: "Elegê", category: "Lacticínios" },
+              { name: "Itambé", category: "Lacticínios" }, { name: "Cotochés", category: "Lacticínios" }, { name: "Poços de Caldas", category: "Lacticínios" },
+              { name: "Président", category: "Lacticínios" }
+            ]
+          },
+          {
+            name: "Ajinomoto",
+            brands: [
+              { name: "Sazón", category: "Culinária" }, { name: "Ajinomoto", category: "Culinária" }, { name: "Hondashi", category: "Culinária" },
+              { name: "Vono", category: "Alimentação" }, { name: "MID", category: "Bebida" }, { name: "FIT", category: "Bebida" },
+              { name: "Satis!", category: "Culinária" }, { name: "Aji-Sal", category: "Culinária" }
+            ]
+          },
+          {
+            name: "Cargill",
+            brands: [
+              { name: "Pomarola", category: "Culinária" }, { name: "Elefante", category: "Culinária" }, { name: "Tarantella", category: "Culinária" },
+              { name: "Liza", category: "Culinária" }, { name: "Maria", category: "Culinária" }, { name: "Purilev", category: "Culinária" }
+            ]
+          },
+          {
+            name: "JDE",
+            brands: [
+              { name: "Pilão", category: "Café" }, { name: "L'OR", category: "Café" }, { name: "Damasco", category: "Café" },
+              { name: "Café do Ponto", category: "Café" }, { name: "Pelé", category: "Café" }, { name: "Caboclo", category: "Café" },
+              { name: "Senseo", category: "Café" }
+            ]
+          },
+          {
+            name: "3 Corações",
+            brands: [
+              { name: "3 Corações", category: "Café" }, { name: "Santa Clara", category: "Café" }, { name: "Pimpinela", category: "Café" },
+              { name: "Iguaçu", category: "Café" }, { name: "Frisco", category: "Bebida" }, { name: "Chocolatto", category: "Bebida" },
+              { name: "TRES", category: "Café" }
+            ]
+          },
+          {
+            name: "Mars",
+            brands: [
+              { name: "M&M's", category: "Chocolate" }, { name: "Snickers", category: "Chocolate" }, { name: "Twix", category: "Chocolate" },
+              { name: "Skittles", category: "Doce" }, { name: "Raris", category: "Alimentação" }, { name: "Masterfoods", category: "Culinária" },
+              { name: "Ben's Original", category: "Alimentação" }, { name: "Pedigree", category: "Pet" }, { name: "Whiskas", category: "Pet" },
+              { name: "Royal Canin", category: "Pet" }
+            ]
+          }
+        ];
+
+        // Normalização simplificada de texto para a pesquisa
+        const normalizeStr = (str) => 
+          str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+        function App() {
+          const svgRef = useRef(null);
+          
+          const [searchTerm, setSearchTerm] = useState('');
+          // Câmara inicial mais afastada para suportar a expansão massiva sem cortar o gráfico
+          const [viewBox, setViewBox] = useState({ x: -4500, y: -4500, w: 19000, h: 19000 });
+          const [isDragging, setIsDragging] = useState(false);
+          const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+          const [touchDist, setTouchDist] = useState(null); // Adicionado para calcular pinch-to-zoom no mobile
+
+          const CX = 5000;
+          const CY = 5000;
+          const R_PARENT = 3400; 
+
+          // --- CERCA INVISÍVEL (BOUNDARIES) ---
+          // Esta função impede que o utilizador arraste o mapa infinitamente para o vazio
+          const clampViewBox = (x, y, w, h) => {
+            const mapCenterX = 5000;
+            const mapCenterY = 5000;
+            const maxDist = 8000; // Limite máximo que o centro da tela pode afastar do centro do mapa
+
+            let cx = x + w / 2;
+            let cy = y + h / 2;
+
+            // Trava o centro da tela se bater na "parede" invisível
+            cx = Math.max(mapCenterX - maxDist, Math.min(mapCenterX + maxDist, cx));
+            cy = Math.max(mapCenterY - maxDist, Math.min(mapCenterY + maxDist, cy));
+
+            return {
+              x: cx - w / 2,
+              y: cy - h / 2,
+              w,
+              h
+            };
+          };
+
+          const activeNodes = useMemo(() => {
+            const term = normalizeStr(searchTerm);
+            if (!term) return { allActive: true, parents: new Set(), brands: new Set() };
+
+            const activeParents = new Set();
+            const activeBrands = new Set();
+
+            marketData.forEach(parent => {
+              const parentMatch = normalizeStr(parent.name).includes(term);
+              let hasBrandMatch = false;
+
+              parent.brands.forEach(brand => {
+                const brandMatch = normalizeStr(brand.name).includes(term);
+                const catMatch = normalizeStr(brand.category).includes(term);
+                if (parentMatch || brandMatch || catMatch) {
+                  activeBrands.add(`${parent.name}-${brand.name}`);
+                  hasBrandMatch = true;
+                }
+              });
+              if (parentMatch || hasBrandMatch) {
+                activeParents.add(parent.name);
+              }
+            });
+
+            return { allActive: false, parents: activeParents, brands: activeBrands };
+          }, [searchTerm]);
+
+          const layout = useMemo(() => {
+            const nodes = [];
+            const links = [];
+            const N = marketData.length;
+            const sliceAngle = (2 * Math.PI) / N;
+
+            marketData.forEach((parent, i) => {
+              const midAngle = (i + 0.5) * sliceAngle;
+              const px = CX + R_PARENT * Math.cos(midAngle);
+              const py = CY + R_PARENT * Math.sin(midAngle);
+
+              nodes.push({
+                type: 'parent',
+                id: parent.name,
+                name: parent.name,
+                x: px,
+                y: py,
+                angle: midAngle
+              });
+
+              // ALGORITMO DE EMPACOTAMENTO CONCÊNTRICO (GARANTIA DE 0% DE COLISÃO)
+              const M = parent.brands.length;
+              const marginAngle = 0.04; // Margem para não invadir a fatia da empresa vizinha
+              const startAngle = i * sliceAngle + marginAngle;
+              const endAngle = (i + 1) * sliceAngle - marginAngle;
+              const availableAngle = endAngle - startAngle;
+
+              let currentRadius = R_PARENT + 420; // Distância inicial a partir da marca-mãe
+              const itemRadius = 110; // Raio exato da submarca definido no render
+              const paddingX = 60; // Espaço horizontal mínimo garantido entre bolhas
+              const paddingY = 270; // Espaço vertical entre as camadas
+
+              let placedCount = 0;
+
+              while (placedCount < M) {
+                // Calcula a largura angular que cada item exige nesta distância atual
+                const itemAngularWidth = (itemRadius * 2 + paddingX) / currentRadius;
+                
+                // Calcula quantos itens cabem nesta camada sem se tocarem fisicamente
+                const maxItemsInRow = Math.max(1, Math.floor(availableAngle / itemAngularWidth));
+                const itemsInThisRow = Math.min(maxItemsInRow, M - placedCount);
+
+                // Centraliza a "fila" de bolhas dentro da fatia disponível para que fique simétrico
+                const rowAngularWidth = itemsInThisRow * itemAngularWidth;
+                const emptyAngle = availableAngle - rowAngularWidth;
+                const rowStartAngle = startAngle + (emptyAngle / 2) + (itemAngularWidth / 2);
+
+                for (let k = 0; k < itemsInThisRow; k++) {
+                  const brand = parent.brands[placedCount];
+                  const bAngle = rowStartAngle + k * itemAngularWidth;
+                  
+                  // Um pequeno "ruído" na distância para quebrar o visual de grelha (aspeto orgânico)
+                  const wobble = Math.sin(placedCount * 13 + i) * 30;
+                  const finalRadius = currentRadius + wobble;
+                  
+                  const bx = CX + finalRadius * Math.cos(bAngle);
+                  const by = CY + finalRadius * Math.sin(bAngle);
+                  const brandId = `${parent.name}-${brand.name}`;
+
+                  nodes.push({
+                    type: 'brand',
+                    id: brandId,
+                    parentId: parent.name,
+                    name: brand.name,
+                    category: brand.category,
+                    x: bx,
+                    y: by,
+                    angle: bAngle
+                  });
+
+                  links.push({
+                    source: { x: px, y: py },
+                    target: { x: bx, y: by },
+                    parentId: parent.name,
+                    brandId: brandId
+                  });
+
+                  placedCount++;
+                }
+                
+                // Terminou a linha, avança para a próxima camada concêntrica (expansão radial)
+                currentRadius += paddingY;
+              }
+            });
+
+            return { nodes, links };
+          }, []);
+
+          const handleMouseDown = (e) => {
+            setIsDragging(true);
+            setDragStart({ x: e.clientX, y: e.clientY });
+          };
+
+          const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            const svgRect = svgRef.current.getBoundingClientRect();
+            const scaleX = viewBox.w / svgRect.width;
+            const scaleY = viewBox.h / svgRect.height;
+            const dx = (e.clientX - dragStart.x) * scaleX;
+            const dy = (e.clientY - dragStart.y) * scaleY;
+
+            // Aplica a cerca invisível durante o arrasto
+            setViewBox(prev => clampViewBox(prev.x - dx, prev.y - dy, prev.w, prev.h));
+            setDragStart({ x: e.clientX, y: e.clientY });
+          };
+
+          const handleMouseUp = () => setIsDragging(false);
+
+          // --- EVENTOS DE TOQUE (MOBILE) ---
+          const handleTouchStart = (e) => {
+            if (e.touches.length === 1) {
+              // Arrastar com um dedo
+              setIsDragging(true);
+              setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            } else if (e.touches.length === 2) {
+              // Iniciar pinça (Pinch-to-zoom)
+              const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+              );
+              setTouchDist(dist);
+            }
+          };
+
+          const handleTouchMove = (e) => {
+            // O CSS touch-action="none" no SVG impede o scroll/bounce indesejado da página
+            if (isDragging && e.touches.length === 1) {
+              // Lógica de arrastar com toque
+              const svgRect = svgRef.current.getBoundingClientRect();
+              const scaleX = viewBox.w / svgRect.width;
+              const scaleY = viewBox.h / svgRect.height;
+              const dx = (e.touches[0].clientX - dragStart.x) * scaleX;
+              const dy = (e.touches[0].clientY - dragStart.y) * scaleY;
+
+              // Aplica a cerca invisível durante o arrasto no touch
+              setViewBox(prev => clampViewBox(prev.x - dx, prev.y - dy, prev.w, prev.h));
+              setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            } else if (e.touches.length === 2 && touchDist !== null) {
+              // Lógica de zoom com dois dedos
+              const newDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+              );
+              const scaleChange = touchDist / newDist;
+              
+              setViewBox(prev => {
+                const newW = prev.w * scaleChange;
+                const newH = prev.h * scaleChange;
+                if (newW > 45000 || newW < 1000) return prev;
+                const dx = (prev.w - newW) / 2;
+                const dy = (prev.h - newH) / 2;
+                return clampViewBox(prev.x + dx, prev.y + dy, newW, newH);
+              });
+              setTouchDist(newDist);
+            }
+          };
+
+          const handleTouchEnd = () => {
+            setIsDragging(false);
+            setTouchDist(null);
+          };
+
+          useEffect(() => {
+            const svgElement = svgRef.current;
+            if (!svgElement) return;
+
+            const handleWheel = (e) => {
+              e.preventDefault();
+              const zoomFactor = 1.1;
+              const direction = e.deltaY > 0 ? 1 : -1;
+              const scaleChange = direction > 0 ? zoomFactor : 1 / zoomFactor;
+
+              setViewBox(prev => {
+                const newW = prev.w * scaleChange;
+                const newH = prev.h * scaleChange;
+                // Aumentei massivamente o limite máximo de zoom para poder visualizar toda a nova malha!
+                if (newW > 45000 || newW < 1000) return prev;
+                const dx = (prev.w - newW) / 2;
+                const dy = (prev.h - newH) / 2;
+                
+                // Cerca invisível aplicada também no Scroll
+                return clampViewBox(prev.x + dx, prev.y + dy, newW, newH);
+              });
+            };
+
+            svgElement.addEventListener('wheel', handleWheel, { passive: false });
+            return () => svgElement.removeEventListener('wheel', handleWheel);
+          }, []);
+
+          // --- BOTÕES DE ZOOM (Cerca invisível aplicada) ---
+          const handleZoomBtn = (action) => {
+            setViewBox(prev => {
+              const factor = action === 'in' ? 0.8 : 1.25;
+              const newW = prev.w * factor;
+              const newH = prev.h * factor;
+              if (newW > 45000 || newW < 1000) return prev;
+              const dx = (prev.w - newW) / 2;
+              const dy = (prev.h - newH) / 2;
+              return clampViewBox(prev.x + dx, prev.y + dy, newW, newH);
+            });
+          };
+
+          // Estilização condicional baseada na pesquisa
+          const getOpacity = (type, id) => {
+            if (activeNodes.allActive) return 1;
+            if (type === 'parent' && activeNodes.parents.has(id)) return 1;
+            if (type === 'brand' && activeNodes.brands.has(id)) return 1;
+            return 0.15;
+          };
+
+          const getStrokeWidth = (type, id) => {
+            if (activeNodes.allActive) return type === 'parent' ? 10 : 4;
+            const isActive = type === 'parent' ? activeNodes.parents.has(id) : activeNodes.brands.has(id);
+            return isActive ? (type === 'parent' ? 16 : 8) : 2;
+          };
+
+          const calculateFontSize = (text, parentNode) => {
+            const maxFontSize = parentNode ? 70 : 32;
+            const maxWidth = parentNode ? 400 : 180;
+            const estimatedCharWidth = 0.55; 
+            const calculatedSize = maxWidth / (text.length * estimatedCharWidth);
+            return Math.min(maxFontSize, calculatedSize);
+          };
+
+          return (
+            <div className="w-full h-screen bg-[#050505] font-dm text-white overflow-hidden relative selection:bg-white selection:text-black">
+              
+              {/* Interface Flutuante Responsiva */}
+              <div className="absolute top-0 left-0 w-full p-4 md:p-6 z-10 flex flex-col md:flex-row items-center justify-between pointer-events-none gap-3 md:gap-4">
+                <div className="pointer-events-auto flex flex-col items-center md:items-start bg-black/40 p-3 md:p-4 rounded-2xl backdrop-blur-md border border-white/5 w-[90%] md:w-auto">
+                  <h1 className="font-cal text-2xl md:text-5xl tracking-tight leading-none mb-1 text-center md:text-left">Mapa de Marcas</h1>
+                  <p className="text-white/60 text-xs md:text-base max-w-sm text-center md:text-left text-balance">
+                    As gigantes que controlam o consumo nacional.
+                  </p>
+                </div>
+
+                <div className="pointer-events-auto relative w-[90%] md:w-[400px]">
+                  <input
+                    type="text"
+                    className="w-full bg-white/10 border border-white/20 text-white rounded-full py-2.5 md:py-3 pl-10 md:pl-12 pr-4 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-white transition-all backdrop-blur-sm relative z-0"
+                    placeholder="Pesquise marcas ou categorias."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 left-3 md:left-4 flex items-center pointer-events-none text-white/80 z-10">
+                    <SearchIcon />
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Zoom Ajustados para Mobile */}
+              <div className="absolute bottom-6 right-4 md:bottom-8 md:right-8 z-10 flex flex-col gap-2 md:gap-3 pointer-events-auto">
+                <button onClick={() => handleZoomBtn('in')} className="p-2 md:p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-white/10 text-white shadow-xl"><ZoomInIcon /></button>
+                <button onClick={() => handleZoomBtn('out')} className="p-2 md:p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-white/10 text-white shadow-xl"><ZoomOutIcon /></button>
+                <button onClick={() => setViewBox({ x: -4500, y: -4500, w: 19000, h: 19000 })} className="p-2 md:p-3 bg-white text-black hover:bg-gray-200 rounded-full mt-1 md:mt-2 shadow-xl"><MaximizeIcon /></button>
+              </div>
+
+              {/* Legenda Dinâmica Desktop/Mobile */}
+              <div className="absolute bottom-6 left-4 md:bottom-8 md:left-8 z-10 flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-white/10 pointer-events-none text-white/60 text-xs md:text-sm">
+                <TargetIcon />
+                <span className="hidden md:inline">Arraste e use o scroll para navegar</span>
+                <span className="md:hidden">Arraste ou faça pinça para zoom</span>
+              </div>
+
+              <svg
+                ref={svgRef}
+                className={`w-full h-full select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                style={{ touchAction: 'none' }}
+                viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+              >
+                {/* NÚCLEO CENTRAL */}
+                <g className="pointer-events-none select-none">
+                  <circle cx={CX} cy={CY} r={1500} fill="white" />
+                  <text x={CX} y={CY - 160} textAnchor="middle" dominantBaseline="central" fill="black" fontSize="320px" className="font-cal tracking-tighter">
+                    MERCADO
+                  </text>
+                  <text x={CX} y={CY + 160} textAnchor="middle" dominantBaseline="central" fill="black" fontSize="320px" className="font-cal tracking-tighter">
+                    BRASILEIRO
+                  </text>
+                </g>
+
+                {/* LINHAS DE CONEXÃO */}
+                <g>
+                  {layout.links.map((link, i) => {
+                    const opacity = activeNodes.allActive ? 0.3 : 
+                      (activeNodes.brands.has(link.brandId)) ? 1 : 0.05;
+                    return (
+                      <line
+                        key={`link-${i}`}
+                        x1={link.source.x} y1={link.source.y}
+                        x2={link.target.x} y2={link.target.y}
+                        stroke="white"
+                        strokeWidth={activeNodes.allActive ? 4 : (opacity === 1 ? 10 : 2)}
+                        opacity={opacity}
+                        className="transition-opacity duration-300"
+                      />
+                    );
+                  })}
+                </g>
+
+                {/* MARCAS-MÃE E SUBMARCAS */}
+                <g>
+                  {layout.nodes.map((node) => {
+                    const isParent = node.type === 'parent';
+                    const radius = isParent ? 250 : 110;
+                    const opacity = getOpacity(node.type, node.id);
+                    const strokeW = getStrokeWidth(node.type, node.id);
+                    const fontSize = calculateFontSize(node.name, isParent);
+                    const catFontSize = !isParent ? Math.min(22, 160 / (node.category.length * 0.55)) : 0;
+
+                    return (
+                      <g 
+                        key={node.id} 
+                        className="transition-opacity duration-300" 
+                        style={{ opacity, transition: 'opacity 0.4s ease-in-out' }}
+                      >
+                        <circle
+                          cx={node.x} cy={node.y} r={radius}
+                          fill="#050505" stroke="white" strokeWidth={strokeW}
+                          className="transition-all duration-300"
+                        />
+                        <text
+                          x={node.x} y={node.y - (isParent ? 0 : 12)}
+                          textAnchor="middle" dominantBaseline="central"
+                          fill="white" fontSize={`${fontSize}px`} fontWeight="bold"
+                          className="font-cal pointer-events-none select-none"
+                        >
+                          {node.name}
+                        </text>
+                        {!isParent && (
+                          <text
+                            x={node.x} y={node.y + 35}
+                            textAnchor="middle" dominantBaseline="central"
+                            fill="#a3a3a3" fontSize={`${catFontSize}px`}
+                            className="font-dm font-medium pointer-events-none select-none tracking-wide uppercase"
+                          >
+                            {node.category}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
+              </svg>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
