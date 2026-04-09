@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Super Mario Galaxy Movie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #030014;
+            color: white;
+            overflow-x: hidden;
+            /* Smooth scrolling behavior for entire page */
+            scroll-behavior: smooth;
+        }
+
+        /* Hide scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030014; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6b21a8; 
+            border-radius: 10px;
+        }
+
+        /* Parallax Background Layer */
+        #bg-parallax {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 200vh;
+            background-size: cover;
+            background-position: center top;
+            z-index: -10;
+            will-change: transform;
+        }
+
+        /* Hero Logo Animation */
+        #hero-logo {
+            transform: scale(0) translateY(0);
+            opacity: 0;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease-in-out;
+            will-change: transform, opacity;
+        }
+        #hero-logo.loaded {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        /* Planets Slider custom logic */
+        .glass-pane {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Gallery slider */
+        .gallery-slide {
+            flex: 0 0 100%;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* Arrow buttons styling */
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            transition: all 0.2s ease;
+        }
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-purple-500 selection:text-white">
+
+    <!-- White Intro Flash Screen -->
+    <div id="intro-flash" class="fixed inset-0 bg-white z-[9999] transition-opacity duration-1000 flex items-center justify-center pointer-events-none"></div>
+
+    <!-- Parallax Background -->
+    <div id="bg-parallax" style="background-image: url('https://visibou.github.io/mariogalaxy/imagens/fundo%20gal%C3%A1xia.webp');"></div>
+
+    <!-- Fixed Header / Tickets Button -->
+    <header class="fixed top-0 w-full p-6 z-[100] flex justify-end pointer-events-none">
+        <a href="https://share.google/YFd064PfY0qt8MguM" target="_blank" rel="noopener noreferrer" class="pointer-events-auto bg-gradient-to-r from-purple-700 to-fuchsia-600 rounded-full py-3 px-8 text-white font-bold text-sm md:text-base border border-purple-300/50 shadow-[0_0_20px_rgba(192,38,211,0.6)] hover:shadow-[0_0_30px_rgba(192,38,211,0.9)] hover:scale-105 transition-all duration-300">
+            Comprar ingressos
+        </a>
+    </header>
+
+    <main class="relative w-full">
+        
+        <!-- SECTION 1: Hero -->
+        <!-- We use 150vh so there is scrolling space before section 2 slides up -->
+        <section id="hero-sec" class="h-[150vh] relative w-full pointer-events-none">
+            <div class="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
+                <img src="https://visibou.github.io/mariogalaxy/imagens/tt.png" id="hero-logo" alt="The Super Mario Galaxy Movie Logo" class="max-w-[90vw] md:max-w-3xl drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+            </div>
+        </section>
+
+        <!-- SECTION 2: Planets Slider -->
+        <section id="planets-sec" class="h-[200vh] relative z-10 w-full">
+            <div id="planets-sticky" class="sticky top-0 h-screen w-full overflow-hidden flex flex-col pt-24 transition-all duration-300 ease-linear">
+                
+                <h2 class="text-4xl md:text-5xl font-bold ml-10 md:ml-20 mb-10 z-20 drop-shadow-lg">Explore as galáxias!</h2>
+                
+                <div id="planets-container" class="relative w-full flex-grow">
+                    <!-- Cards are injected via JS -->
+                </div>
+
+                <!-- Slider Controls -->
+                <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-8 z-30">
+                    <button onclick="prevPlanet()" class="nav-btn w-14 h-14 rounded-full flex items-center justify-center border border-white/40">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button onclick="nextPlanet()" class="nav-btn w-14 h-14 rounded-full flex items-center justify-center border border-white/40">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Video Transition -->
+        <section id="video-sec" class="relative h-screen w-full z-20 bg-black/80 flex items-center justify-center overflow-hidden">
+            <video src="https://visibou.github.io/mariogalaxy/imagens/bg.mp4" autoplay loop muted playsinline class="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-screen"></video>
+            <!-- Optional overlay to make it look cinematic -->
+            <div class="absolute inset-0 bg-gradient-to-b from-[#030014] via-transparent to-[#030014]"></div>
+        </section>
+
+        <!-- SECTION 4: Gallery -->
+        <section id="gallery-sec" class="relative min-h-screen w-full z-30 bg-[#030014] py-24 px-6 md:px-20 flex flex-col justify-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-12 drop-shadow-lg z-10">Galeria</h2>
+            
+            <div class="relative w-full max-w-6xl mx-auto flex items-center">
+                <!-- Gallery Arrow Left -->
+                <button onclick="prevGallery()" class="nav-btn absolute -left-4 md:-left-12 z-20 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border border-white/40">
+                    <svg class="w-6 h-6 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+
+                <!-- Gallery Viewport -->
+                <div class="w-full overflow-hidden rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
+                    <div id="gallery-track" class="flex transition-transform duration-500 ease-in-out w-full">
+                        <!-- Gallery images injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Gallery Arrow Right -->
+                <button onclick="nextGallery()" class="nav-btn absolute -right-4 md:-right-12 z-20 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center border border-white/40">
+                    <svg class="w-6 h-6 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- SECTION 5: Trailer -->
+        <section id="trailer-sec" class="relative min-h-screen w-full z-30 bg-[#030014] py-24 px-6 md:px-20 flex flex-col justify-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-12 drop-shadow-lg z-10">Trailer</h2>
+            <div class="w-full max-w-6xl mx-auto aspect-video rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(192,38,211,0.2)] border border-white/20 relative z-10">
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/En5QZmL5R1s?rel=0&origin=https://visibou.github.io" title="The Super Mario Galaxy Movie | Final Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+        </section>
+
+        <!-- SECTION 6: Creators -->
+        <section id="creators-sec" class="relative min-h-screen w-full z-30 bg-[#030014] py-24 px-6 md:px-20 flex flex-col justify-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-16 drop-shadow-lg z-10 text-center md:text-left">Criadores</h2>
+            
+            <div class="w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-12 md:gap-24 justify-center items-center z-10">
+                <!-- Creator 1 -->
+                <div class="flex flex-col items-center group">
+                    <div class="w-64 h-64 md:w-80 md:h-80 rounded-[40px] overflow-hidden border-2 border-white/30 shadow-2xl transition-transform duration-300 group-hover:scale-105 group-hover:border-purple-400">
+                        <img src="https://visibou.github.io/mariogalaxy/imagens/thi%20mario.png" alt="Thiago" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="mt-6 text-2xl font-semibold tracking-wide">Thiago Kassner Lee</h3>
+                    <p class="text-purple-300/80 mt-1 uppercase tracking-widest text-sm">202410114</p>
+                </div>
+
+                <!-- Creator 2 -->
+                <div class="flex flex-col items-center group">
+                    <div class="w-64 h-64 md:w-80 md:h-80 rounded-[40px] overflow-hidden border-2 border-white/30 shadow-2xl transition-transform duration-300 group-hover:scale-105 group-hover:border-purple-400">
+                        <img src="https://visibou.github.io/mariogalaxy/imagens/gi%20peach.png" alt="Giovanna" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="mt-6 text-2xl font-semibold tracking-wide">Giovanna Marcon Dalcol</h3>
+                    <p class="text-purple-300/80 mt-1 uppercase tracking-widest text-sm">202410252</p>
+                </div>
+            </div>
+
+            <!-- Footer Logos -->
+            <div class="w-full mt-32 flex justify-center items-center z-10">
+                <img src="https://visibou.github.io/mariogalaxy/imagens/legal-logos.png" alt="Logos Legais" class="max-w-[90vw] md:max-w-4xl opacity-70 hover:opacity-100 transition-opacity duration-300 object-contain">
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- 1. Intro Animation Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const flash = document.getElementById('intro-flash');
+            const logo = document.getElementById('hero-logo');
+            
+            setTimeout(() => {
+                flash.style.opacity = '0'; // Fade out white screen
+                setTimeout(() => {
+                    flash.style.display = 'none'; // Remove from DOM flow
+                    // Trigger Logo Pop-in
+                    logo.classList.add('loaded');
+                }, 1000);
+            }, 300); // Small delay on load
+        });
+
+        // --- 2. Planets Slider Logic ---
+        const planetsData = [
+            'card%201.png', 'card%202.png', 'card%203.png', 'card%204.png', 'card%205.png', 'card%206.png'
+        ];
+        let currentPlanet = 0;
+        const planetsContainer = document.getElementById('planets-container');
+
+        // Initialize Planet Cards
+        planetsData.forEach((imgSrc, index) => {
+            const cardWrapper = document.createElement('div');
+            // Core styles for 3D positioning
+            cardWrapper.className = `absolute top-1/2 left-1/2 origin-center transition-all duration-700 ease-out`;
+            // Enforce exact 900x540 size per user request
+            cardWrapper.style.width = '900px';
+            cardWrapper.style.height = '540px';
+            cardWrapper.id = `planet-card-${index}`;
+
+            cardWrapper.innerHTML = `
+                <!-- The Glass Pane Frame exactly aligned to top-left -->
+                <div class="glass-pane absolute top-0 left-0 w-full h-full rounded-[30px]"></div>
+                <!-- The PNG Card translated 30px right and 30px down from origin -->
+                <img src="https://visibou.github.io/mariogalaxy/imagens/${imgSrc}" class="absolute w-[900px] h-[540px] max-w-none object-cover drop-shadow-2xl transition-transform duration-500 z-10" style="top: 30px; left: 30px; pointer-events: none;" />
+            `;
+            planetsContainer.appendChild(cardWrapper);
+        });
+
+        function updatePlanetsDisplay() {
+            // Screen width scaling to preserve the exact 900x540 aspect while fitting smaller screens
+            const isMobile = window.innerWidth < 1000;
+            const mobileScale = isMobile ? window.innerWidth / 1000 : 1;
+            const offsetAmount = 850 * mobileScale;
+
+            planetsData.forEach((_, index) => {
+                const card = document.getElementById(`planet-card-${index}`);
+                
+                // Circular loop logic
+                let diff = index - currentPlanet;
+                const halfLength = planetsData.length / 2;
+                if (diff > halfLength) diff -= planetsData.length;
+                else if (diff < -halfLength) diff += planetsData.length;
+
+                const innerImg = card.querySelector('img');
+
+                if (diff === 0) {
+                    // Center Active Card (moved up using -60%)
+                    card.style.transform = `translate(-50%, -60%) scale(${1 * mobileScale})`;
+                    card.style.opacity = '1';
+                    card.style.zIndex = '20';
+                    card.style.pointerEvents = 'auto';
+                    innerImg.style.transform = 'scale(1)';
+                } else if (diff === -1) {
+                    // Immediate Left Card
+                    card.style.transform = `translate(calc(-50% - ${offsetAmount}px), -60%) scale(${0.85 * mobileScale})`;
+                    card.style.opacity = '0.3';
+                    card.style.zIndex = '10';
+                    card.style.pointerEvents = 'none';
+                    innerImg.style.transform = 'scale(0.95)';
+                } else if (diff === 1) {
+                    // Immediate Right Card
+                    card.style.transform = `translate(calc(-50% + ${offsetAmount}px), -60%) scale(${0.85 * mobileScale})`;
+                    card.style.opacity = '0.3';
+                    card.style.zIndex = '10';
+                    card.style.pointerEvents = 'none';
+                    innerImg.style.transform = 'scale(0.95)';
+                } else {
+                    // Hide all other distant cards to prevent stacking
+                    const direction = diff < 0 ? -1 : 1;
+                    card.style.transform = `translate(calc(-50% + ${offsetAmount * direction * 1.5}px), -60%) scale(${0.7 * mobileScale})`;
+                    card.style.opacity = '0';
+                    card.style.zIndex = '0';
+                    card.style.pointerEvents = 'none';
+                    innerImg.style.transform = 'scale(0.9)';
+                }
+            });
+        }
+
+        function nextPlanet() {
+            currentPlanet = (currentPlanet + 1) % planetsData.length;
+            updatePlanetsDisplay();
+        }
+
+        function prevPlanet() {
+            currentPlanet = (currentPlanet - 1 + planetsData.length) % planetsData.length;
+            updatePlanetsDisplay();
+        }
+
+        // Run once to position them initially
+        updatePlanetsDisplay();
+        window.addEventListener('resize', updatePlanetsDisplay);
+
+        // --- 3. Gallery Logic ---
+        const galleryImages = [
+            'galeria1.jpg', 'galeria2.jpg', 'galeria3.jpg', 'galeria4.jpg', 'galeria5.jpg', 'observatário-de-cometas-desktop-1.jpg', 'cascata-do-fóssil-desktop-2.jpg', 'galáxia-da-colmeia-desktop-1.jpg'
+        ];
+        let currentGalleryImage = 0;
+        const galleryTrack = document.getElementById('gallery-track');
+
+        galleryImages.forEach(img => {
+            const slide = document.createElement('div');
+            slide.className = 'gallery-slide w-full h-[300px] md:h-[600px] flex-shrink-0';
+            slide.innerHTML = `<img src="https://visibou.github.io/mariogalaxy/imagens/${img}" class="w-full h-full object-cover" />`;
+            galleryTrack.appendChild(slide);
+        });
+
+        function updateGalleryDisplay() {
+            galleryTrack.style.transform = `translateX(-${currentGalleryImage * 100}%)`;
+        }
+
+        function nextGallery() {
+            currentGalleryImage = (currentGalleryImage + 1) % galleryImages.length;
+            updateGalleryDisplay();
+        }
+
+        function prevGallery() {
+            currentGalleryImage = (currentGalleryImage - 1 + galleryImages.length) % galleryImages.length;
+            updateGalleryDisplay();
+        }
+
+
+        // --- 4. Scrollytelling Mechanics ---
+        const heroLogo = document.getElementById('hero-logo');
+        const bgParallax = document.getElementById('bg-parallax');
+        const planetsSticky = document.getElementById('planets-sticky');
+        const videoSec = document.getElementById('video-sec');
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+
+            // 1. Parallax background moves upwards slightly slower than normal scrolling
+            bgParallax.style.transform = `translateY(${-scrollY * 0.15}px)`;
+
+            // 2. Hero Logo flies upwards as you scroll down
+            // Negative translation makes it go up while the hero container is sticky
+            heroLogo.style.transform = `translateY(${-scrollY * 0.8}px) scale(1)`;
+
+            // 3. Darken and Blur Planets, and fade out the galaxy background
+            // The effect now happens completely BEFORE the video section enters the screen
+            const videoRect = videoSec.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+
+            // When scrolling through the space between the cards and the video
+            // (video is between 2x viewport height and 1x viewport height away)
+            if (videoRect.top <= viewportHeight * 2 && videoRect.top > viewportHeight) {
+                // Calculate percentage of progress (0.0 to 1.0) before video enters
+                const progress = 1 - ((videoRect.top - viewportHeight) / viewportHeight);
+                
+                // Max blur 15px, Max darkening to brightness(0.2)
+                planetsSticky.style.filter = `blur(${progress * 15}px) brightness(${1 - (progress * 0.8)})`;
+                
+                // Fade out the galaxy background to reveal the #030014 color smoothly
+                bgParallax.style.opacity = `${1 - progress}`;
+
+            } else if (videoRect.top <= viewportHeight) {
+                // Video is entering or already on screen: keep effects at max
+                planetsSticky.style.filter = `blur(15px) brightness(0.2)`;
+                bgParallax.style.opacity = '0';
+            } else {
+                // Video is too far down, reset effects
+                planetsSticky.style.filter = `blur(0px) brightness(1)`;
+                bgParallax.style.opacity = '1';
+            }
+        });
+
+    </script>
+</body>
+</html>
