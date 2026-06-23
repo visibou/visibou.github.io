@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
@@ -30,16 +29,16 @@
                     },
                     fontFamily: {
                         sans: ['"DM Sans"', 'sans-serif'],
-                        title: ['"ForzaBold"', 'sans-serif']
+                        title: ['"Cal Sans"', 'sans-serif']
                     },
                     animation: {
                         'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite'
                     },
                     keyframes: {
                         float: {
                             '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-20px)' },
+                            '50%': { transform: 'translateY(-20px)' }
                         }
                     }
                 }
@@ -49,11 +48,11 @@
 
     <style>
         @font-face {
-            font-family: 'ForzaBold';
-            src: url('https://visibou.github.io/fh6guard/fonts/Forza_Horizon6_Bold.ttf') format('truetype');
-            font-weight: bold;
+            font-family: 'Cal Sans';
             font-style: normal;
+            font-weight: 400;
             font-display: swap;
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/cal-sans@latest/latin-400-normal.woff2') format('woff2');
         }
 
         body {
@@ -83,25 +82,6 @@
             box-shadow: 0 0 15px rgba(34, 140, 143, 0.4);
             border-color: #228c8f;
         }
-
-        .modal-enter {
-            opacity: 0;
-            transform: scale(0.9);
-        }
-        .modal-enter-active {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 300ms, transform 300ms;
-        }
-        .modal-exit {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .modal-exit-active {
-            opacity: 0;
-            transform: scale(0.9);
-            transition: opacity 300ms, transform 300ms;
-        }
     </style>
 </head>
 <body class="antialiased selection:bg-primary selection:text-white">
@@ -117,7 +97,7 @@
                         <a href="#features" class="hover:text-primary transition-colors text-sm font-medium">Features</a>
                         <a href="#guide" class="hover:text-primary transition-colors text-sm font-medium">Quickstart</a>
                     </div>
-                    <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" 
+                    <a href="https://visibou.github.io/fh6guard/fh6_guard1.0.1.zip" 
                        onclick="window.scrollTo({top: 0, behavior: 'smooth'}); showThankYouModal();"
                        target="_blank"
                        class="bg-surface hover:bg-surfaceHover border border-surfaceHover text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:border-accentYellow duration-300">
@@ -143,7 +123,7 @@
                     </p>
                     
                     <div id="download" class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                        <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" 
+                        <a href="https://visibou.github.io/fh6guard/fh6_guard1.0.1.zip" 
                            onclick="showThankYouModal()"
                            target="_blank"
                            class="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-white rounded-xl font-bold text-lg overflow-hidden transition-all hover:scale-105 glow-pink w-full sm:w-auto">
@@ -152,19 +132,19 @@
                             <div class="absolute inset-0 h-full w-0 bg-white/20 transition-all duration-300 ease-out group-hover:w-full z-0"></div>
                         </a>
                         <span class="text-sm text-gray-500 flex items-center gap-1">
-                        <i class="ph-fill ph-windows-logo"></i> Windows 10/11
-                    </span>
+                            <i class="ph-fill ph-windows-logo"></i> Windows 10/11
+                        </span>
+                    </div>
+                </div>
+
+                <div class="relative z-10 flex justify-center lg:justify-end animate-float order-1 lg:order-2">
+                    <div class="relative w-full max-w-md">
+                        <img src="https://visibou.github.io/fh6guard/assets/hero.png" alt="FH6 Guard Dashboard" class="w-full h-auto drop-shadow-[0_0_30px_rgba(254,2,136,0.3)]">
+                    </div>
                 </div>
             </div>
 
-            <div class="relative z-10 flex justify-center lg:justify-end animate-float order-1 lg:order-2">
-                <div class="relative w-full max-w-md">
-                    <img src="https://visibou.github.io/fh6guard/assets/hero.png" alt="FH6 Guard Dashboard" class="w-full h-auto drop-shadow-[0_0_30px_rgba(254,2,136,0.3)]">
-                </div>
-            </div>
-        </div>
-
-        <div id="scrollIndicator" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 opacity-100">
+            <div id="scrollIndicator" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 opacity-100">
                 <a href="#features" class="flex flex-col items-center text-primary hover:text-accentYellow transition-colors animate-bounce cursor-pointer">
                     <i class="ph-bold ph-caret-double-down text-3xl"></i>
                 </a>
@@ -311,11 +291,11 @@
 
             <p class="text-xs text-gray-500">
                 Download didn't start? 
-                <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" class="text-primary hover:underline font-bold">Click here to retry</a>.
+                <a href="https://visibou.github.io/fh6guard/fh6_guard1.0.1.zip" class="text-primary hover:underline font-bold">Click here to retry</a>.
             </p>
 
             <button onclick="closeModal()" class="mt-6 w-full bg-surfaceHover text-white py-3 rounded-xl font-bold hover:bg-[#444] transition-colors border border-transparent hover:border-gray-500">
-                Close Screen
+                Close
             </button>
         </div>
     </div>
@@ -355,7 +335,6 @@
 
         window.addEventListener('click', (e) => {
             const modal = document.getElementById('thankYouModal');
-            const content = document.getElementById('modalContent');
             if (e.target === modal) {
                 closeModal();
             }
