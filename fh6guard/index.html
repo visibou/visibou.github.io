@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FH6 Guard - Protect Your Save</title>
+    
+    <link rel="icon" type="image/x-icon" href="https://visibou.github.io/fh6guard/favicon.ico">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#1d1d1d',
+                        textWhite: '#ffffff',
+                        primary: '#fe0288',
+                        accentCyan: '#228c8f',
+                        accentYellow: '#caff02',
+                        surface: '#262626',
+                        surfaceHover: '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['"DM Sans"', 'sans-serif'],
+                        title: ['"ForzaBold"', 'sans-serif']
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @font-face {
+            font-family: 'ForzaBold';
+            src: url('https://visibou.github.io/fh6guard/fonts/Forza_Horizon6_Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        body {
+            background-color: #1d1d1d;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1d1d1d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #fe0288;
+        }
+
+        .glow-pink {
+            box-shadow: 0 0 20px rgba(254, 2, 136, 0.5);
+        }
+        .glow-cyan-hover:hover {
+            box-shadow: 0 0 15px rgba(34, 140, 143, 0.4);
+            border-color: #228c8f;
+        }
+
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 300ms, transform 300ms;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary selection:text-white">
+
+    <nav class="fixed w-full z-50 bg-background/80 backdrop-blur-md border-b border-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <img src="https://visibou.github.io/fh6guard/assets/logo.png" alt="FH6 Guard Logo" class="h-10 w-auto object-contain">
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="#features" class="hover:text-primary transition-colors text-sm font-medium">Features</a>
+                        <a href="#guide" class="hover:text-primary transition-colors text-sm font-medium">Quickstart</a>
+                    </div>
+                    <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" 
+                       onclick="window.scrollTo({top: 0, behavior: 'smooth'}); showThankYouModal();"
+                       target="_blank"
+                       class="bg-surface hover:bg-surfaceHover border border-surfaceHover text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:border-accentYellow duration-300">
+                        Get App
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-24">
+        <section class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-32 lg:pt-20 lg:pb-40 min-h-[calc(100vh-6rem)] flex flex-col justify-center">
+            <div class="absolute top-1/4 left-0 w-72 h-72 bg-primary rounded-full mix-blend-screen filter blur-[128px] opacity-20 animate-pulse-slow pointer-events-none"></div>
+            <div class="absolute bottom-1/4 right-0 w-72 h-72 bg-accentYellow rounded-full mix-blend-screen filter blur-[128px] opacity-10 pointer-events-none"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="text-center lg:text-left z-10">
+                    <h1 class="font-title text-5xl sm:text-6xl lg:text-7xl leading-tight mb-6 text-textWhite drop-shadow-lg">
+                        NEVER LOSE YOUR <br/> <span class="text-primary">PROGRESS</span> AGAIN.
+                    </h1>
+                    <p class="text-lg sm:text-xl text-gray-400 mb-10 max-w-2xl mx-auto lg:mx-0">
+                        Don't let save corruption drive you crazy. FH6 Guard is a lightweight launcher that automatically secures your saves while you race.
+                    </p>
+                    
+                    <div id="download" class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+                        <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" 
+                           onclick="showThankYouModal()"
+                           target="_blank"
+                           class="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-white rounded-xl font-bold text-lg overflow-hidden transition-all hover:scale-105 glow-pink w-full sm:w-auto">
+                            <i class="ph-bold ph-download-simple text-2xl"></i>
+                            <span>Download FH6 Guard</span>
+                            <div class="absolute inset-0 h-full w-0 bg-white/20 transition-all duration-300 ease-out group-hover:w-full z-0"></div>
+                        </a>
+                        <span class="text-sm text-gray-500 flex items-center gap-1">
+                            <i class="ph-fill ph-windows-logo"></i> Windows 10/11
+                        </span>
+                    </div>
+                </div>
+
+                <div class="relative z-10 flex justify-center lg:justify-end animate-float">
+                    <div class="relative w-full max-w-md">
+                        <img src="https://visibou.github.io/fh6guard/assets/hero.png" alt="FH6 Guard Dashboard" class="w-full h-auto drop-shadow-[0_0_30px_rgba(254,2,136,0.3)]">
+                    </div>
+                </div>
+            </div>
+
+            <div id="scrollIndicator" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 opacity-100">
+                <a href="#features" class="flex flex-col items-center text-primary hover:text-accentYellow transition-colors animate-bounce cursor-pointer">
+                    <i class="ph-bold ph-caret-double-down text-3xl"></i>
+                </a>
+            </div>
+        </section>
+
+        <section id="features" class="py-20 bg-[#161616] border-y border-surface relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-16">
+                    <h2 class="font-title text-4xl text-textWhite mb-4">ENGINEERED FOR <span class="text-accentYellow">PEACE OF MIND</span></h2>
+                    <p class="text-gray-400 max-w-2xl mx-auto">Everything you need to keep your garage safe, built into a tool that never gets in your way.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-surface p-8 rounded-2xl border border-surfaceHover transition-all duration-300 hover:border-accentYellow hover:shadow-[0_0_15px_rgba(202,255,2,0.15)] group">
+                        <div class="w-14 h-14 bg-[#1d1d1d] rounded-xl flex items-center justify-center mb-6 group-hover:bg-accentYellow/10 transition-colors">
+                            <i class="ph-duotone ph-rocket-launch text-3xl text-accentYellow"></i>
+                        </div>
+                        <h3 class="font-title text-xl mb-3 text-textWhite">EASY SETUP</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Get started in seconds. Just point it to your game executable and let it do the heavy lifting.</p>
+                    </div>
+
+                    <div class="bg-surface p-8 rounded-2xl border border-surfaceHover transition-all duration-300 hover:border-accentYellow hover:shadow-[0_0_15px_rgba(202,255,2,0.15)] group">
+                        <div class="w-14 h-14 bg-[#1d1d1d] rounded-xl flex items-center justify-center mb-6 group-hover:bg-accentYellow/10 transition-colors">
+                            <i class="ph-duotone ph-feather text-3xl text-accentYellow"></i>
+                        </div>
+                        <h3 class="font-title text-xl mb-3 text-textWhite">LIGHTWEIGHT</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Optimized to use as little memory as possible. It runs quietly in the background without stealing your frames.</p>
+                    </div>
+
+                    <div class="bg-surface p-8 rounded-2xl border border-surfaceHover transition-all duration-300 hover:border-accentYellow hover:shadow-[0_0_15px_rgba(202,255,2,0.15)] group">
+                        <div class="w-14 h-14 bg-[#1d1d1d] rounded-xl flex items-center justify-center mb-6 group-hover:bg-accentYellow/10 transition-colors">
+                            <i class="ph-duotone ph-shield-check text-3xl text-accentYellow"></i>
+                        </div>
+                        <h3 class="font-title text-xl mb-3 text-textWhite">PRIVATE</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Your data stays on your PC. No analytics, no cloud uploads, just pure local backup architecture.</p>
+                    </div>
+
+                    <div class="bg-surface p-8 rounded-2xl border border-surfaceHover transition-all duration-300 hover:border-accentYellow hover:shadow-[0_0_15px_rgba(202,255,2,0.15)] group">
+                        <div class="w-14 h-14 bg-[#1d1d1d] rounded-xl flex items-center justify-center mb-6 group-hover:bg-accentYellow/10 transition-colors">
+                            <i class="ph-duotone ph-sliders-horizontal text-3xl text-accentYellow"></i>
+                        </div>
+                        <h3 class="font-title text-xl mb-3 text-textWhite">CUSTOMIZABLE</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Configure backup intervals, target directories, and retention rules exactly to your personal preferences.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="guide" class="py-20 bg-surface/30 border-y border-surface relative">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="font-title text-4xl text-textWhite mb-4">QUICKSTART <span class="text-accentYellow">GUIDE</span></h2>
+                    <p class="text-gray-400">Get protected in 4 simple steps.</p>
+                </div>
+
+                <div class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-surfaceHover before:to-transparent">
+                    
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-accentYellow text-background font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-[0_0_10px_rgba(202,255,2,0.5)] z-10">
+                            1
+                        </div>
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-surface border border-surfaceHover">
+                            <h4 class="font-title text-lg text-white mb-1">Download App</h4>
+                            <p class="text-sm text-gray-400">Download from the official website using the button above.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-primary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-[0_0_10px_rgba(254,2,136,0.5)] z-10">
+                            2
+                        </div>
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-surface border border-surfaceHover">
+                            <h4 class="font-title text-lg text-white mb-1">Extract Archive</h4>
+                            <p class="text-sm text-gray-400">Extract the downloaded zip file into a folder of your choice.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-accentYellow text-background font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-[0_0_10px_rgba(202,255,2,0.5)] z-10">
+                            3
+                        </div>
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-surface border border-surfaceHover">
+                            <h4 class="font-title text-lg text-white mb-1">Run Application</h4>
+                            <p class="text-sm text-gray-400">Run <code class="bg-background px-1.5 py-0.5 rounded text-accentYellow">fh6_guard.exe</code>. (Note: Windows SmartScreen might appear. Click "More info" -> "Run anyway").</p>
+                        </div>
+                    </div>
+
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-primary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-[0_0_10px_rgba(254,2,136,0.5)] z-10">
+                            4
+                        </div>
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-surface border border-surfaceHover">
+                            <h4 class="font-title text-lg text-white mb-1">Configure</h4>
+                            <p class="text-sm text-gray-400">Follow the on-screen setup instructions in the app to configure your directories.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-[#111111] py-12 border-t border-surface">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+            <img src="https://visibou.github.io/fh6guard/assets/logo.png" alt="Logo" class="h-10 w-auto grayscale opacity-50 hover:grayscale-0 transition-all duration-300 mb-8">
+            
+            <div class="text-xs text-gray-600 leading-relaxed mb-8 max-w-2xl">
+                <p class="mb-2"><strong>Legal Disclaimer:</strong> FH6 Guard is a community-created utility tool. It is <strong>NOT</strong> affiliated with, endorsed by, sponsored by, or in any way associated with Microsoft Corporation, Playground Games, Xbox Game Studios, or the Forza franchise.</p>
+                <p>All product names, logos, brands, trademarks, and registered trademarks are property of their respective owners. The use of these names, trademarks, and brands does not imply endorsement.</p>
+            </div>
+
+            <div class="flex items-center gap-6 mb-6">
+                <a href="https://visibou.github.io/" class="text-gray-500 hover:text-white transition-colors"><i class="ph-bold ph-globe text-2xl"></i></a>
+                <a href="https://github.com/visibou" class="text-gray-500 hover:text-white transition-colors"><i class="ph-bold ph-github-logo text-2xl"></i></a>
+            </div>
+
+            <p class="text-xs text-gray-600">&copy; <script>document.write(new Date().getFullYear())</script> thi (visible). All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="thankYouModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all duration-300 opacity-0" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="relative bg-surface border border-surfaceHover rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform transition-all scale-95" id="modalContent">
+            
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors bg-surfaceHover/50 rounded-full p-1">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+
+            <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="ph-fill ph-check-circle text-5xl text-primary drop-shadow-[0_0_10px_rgba(254,2,136,0.8)]"></i>
+            </div>
+            
+            <h3 class="font-title text-3xl text-white mb-2" id="modal-title">Thank You!</h3>
+            <p class="text-gray-400 mb-6">Your download of FH6 Guard should start automatically. Get ready to protect your progress!</p>
+            
+            <div class="bg-background rounded-xl p-4 mb-6 border border-surfaceHover text-left text-sm">
+                <p class="text-accentYellow font-bold mb-1 flex items-center gap-1"><i class="ph-bold ph-warning"></i> Next steps:</p>
+                <ol class="text-gray-300 list-decimal list-inside space-y-1">
+                    <li>Extract the downloaded <code class="text-accentYellow">.zip</code> file.</li>
+                    <li>Run <code class="text-accentYellow">fh6_guard.exe</code>.</li>
+                    <li>Follow the in-app setup.</li>
+                </ol>
+            </div>
+
+            <p class="text-xs text-gray-500">
+                Download didn't start? 
+                <a href="https://visibou.github.io/fh6guard/fh6guard1.0.0.zip" class="text-primary hover:underline font-bold">Click here to retry</a>.
+            </p>
+
+            <button onclick="closeModal()" class="mt-6 w-full bg-surfaceHover text-white py-3 rounded-xl font-bold hover:bg-[#444] transition-colors border border-transparent hover:border-gray-500">
+                Close Screen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function showThankYouModal() {
+            const modal = document.getElementById('thankYouModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            void modal.offsetWidth;
+            
+            modal.classList.remove('opacity-0');
+            modal.classList.add('opacity-100');
+            
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('thankYouModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('thankYouModal');
+            const content = document.getElementById('modalContent');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            const indicator = document.getElementById('scrollIndicator');
+            if (indicator) {
+                if (window.scrollY > 100) {
+                    indicator.classList.remove('opacity-100');
+                    indicator.classList.add('opacity-0', 'pointer-events-none');
+                } else {
+                    indicator.classList.remove('opacity-0', 'pointer-events-none');
+                    indicator.classList.add('opacity-100');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
