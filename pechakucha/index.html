@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pecha Kucha</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --spring-duration: 0.4s;
+            --spring-easing: cubic-bezier(0.25, 1, 0.5, 1); /* Approximate critically damped spring */
+            --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* Under-damped spring for momentum */
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            overscroll-behavior: none; /* Prevent rubber-banding on the whole page */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Fluid Typography scaling based on Apple's optical sizing principles */
+        h1 {
+            letter-spacing: -0.02em;
+        }
+        
+        .display-text {
+            font-size: clamp(3rem, 10vw, 12rem);
+            line-height: 1;
+            letter-spacing: -0.04em;
+            font-weight: 700;
+        }
+
+        /* Active states respond on pointer-down instantly */
+        .btn-active-scale {
+            transition: transform 100ms ease-out, opacity 100ms ease-out, background-color 200ms ease;
+        }
+        .btn-active-scale:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+        .btn-active-scale:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Translucent material (Apple glassmorphism) */
+        .material-glass {
+            background: rgba(28, 28, 30, 0.6);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .view-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--spring-duration) var(--spring-easing),
+                        transform var(--spring-duration) var(--spring-easing);
+            transform: scale(0.98);
+        }
+
+        .view-layer.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* Drag and drop feedback */
+        .dropzone {
+            transition: background-color 200ms ease, border-color 200ms ease, transform var(--spring-duration) var(--spring-bounce);
+        }
+        .dropzone.dragover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.02);
+        }
+
+        /* Image transitions for presentation */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            transition: opacity 1s ease-in-out; /* Smooth crossfade */
+            will-change: opacity;
+        }
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* Countdown animation */
+        @keyframes countdown-pulse {
+            0% { transform: scale(0.8); opacity: 0; }
+            20% { transform: scale(1); opacity: 1; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+        .animate-countdown {
+            animation: countdown-pulse 1s forwards cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Custom Scrollbar for thumbnail grid */
+        .thumb-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+        .thumb-grid::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .thumb-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen">
+
+    <!-- VIEW 1: SETUP -->
+    <main id="view-setup" class="view-layer active p-4 sm:p-8">
+        <div class="material-glass rounded-3xl w-full max-w-4xl h-full max-h-[800px] flex flex-col overflow-hidden shadow-2xl shadow-black/50">
+            
+            <!-- Header -->
+            <header class="pt-10 pb-6 px-10 text-center flex-shrink-0">
+                <h1 class="text-3xl font-semibold mb-2">Pecha Kucha</h1>
+                <p class="text-zinc-400 text-sm font-medium tracking-wide">20 IMAGES &middot; 20 SECONDS EACH</p>
+            </header>
+
+            <!-- Dropzone & Grid -->
+            <div class="flex-grow px-10 pb-4 overflow-hidden flex flex-col relative">
+                
+                <!-- File Input hidden, triggered by dropzone click -->
+                <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                
+                <div id="dropzone" class="dropzone relative w-full h-full border-2 border-dashed border-zinc-700 rounded-2xl flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="text-center transition-opacity duration-300 z-10 pointer-events-none">
+                        <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-8 h-8 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        <h2 class="text-xl font-medium mb-1">Select or drop images</h2>
+                        <p class="text-zinc-500 text-sm">Upload exactly 20 images to begin.</p>
+                    </div>
+
+                    <!-- Thumbnails Grid (Hidden initially) -->
+                    <div id="thumbnail-grid" class="thumb-grid absolute inset-0 p-4 grid grid-cols-4 sm:grid-cols-5 gap-3 overflow-y-auto opacity-0 pointer-events-none transition-opacity duration-300 bg-zinc-900/50">
+                        <!-- Thumbnails injected here via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer / Actions -->
+            <footer class="p-6 px-10 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between bg-white/5 flex-shrink-0">
+                <div class="mb-4 sm:mb-0 text-center sm:text-left">
+                    <div class="text-2xl font-semibold"><span id="count-display">0</span><span class="text-zinc-500">/20</span></div>
+                    <div id="status-message" class="text-sm text-zinc-400 h-5 transition-colors duration-300">Waiting for images...</div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="btn-clear" class="btn-active-scale px-6 py-3 rounded-full bg-zinc-800 text-white font-medium text-sm hidden">
+                        Clear All
+                    </button>
+                    <button id="btn-start" disabled class="btn-active-scale px-8 py-3 rounded-full bg-white text-black font-semibold shadow-lg disabled:bg-zinc-800 disabled:text-zinc-500 transition-all duration-300">
+                        Start Presentation
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </main>
+
+    <!-- VIEW 2: COUNTDOWN -->
+    <main id="view-countdown" class="view-layer bg-black">
+        <div id="countdown-number" class="display-text text-white drop-shadow-2xl opacity-0">5</div>
+    </main>
+
+    <!-- VIEW 3: PRESENTATION -->
+    <main id="view-presentation" class="view-layer bg-black">
+        <div id="slide-container" class="relative w-full h-full flex items-center justify-center">
+            <!-- Slides injected here via JS -->
+        </div>
+        
+        <!-- Subtle progress indicator (Apple doesn't like clutter, but context is good) -->
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-full material-glass text-xs font-medium tracking-widest text-white/70 opacity-0 hover:opacity-100 transition-opacity duration-500 z-50 flex gap-2">
+            <span id="pres-current">1</span> / <span id="pres-total">20</span>
+        </div>
+        
+        <!-- Emergency exit / Interruptibility -->
+        <button id="btn-exit" class="absolute top-6 right-6 w-10 h-10 rounded-full material-glass flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-colors z-50 btn-active-scale opacity-0 hover:opacity-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </main>
+
+    <!-- VIEW 4: DONE -->
+    <main id="view-done" class="view-layer">
+        <div class="text-center">
+            <h1 class="text-5xl font-semibold mb-6 tracking-tight">Presentation Complete</h1>
+            <button id="btn-restart" class="btn-active-scale px-8 py-3 rounded-full bg-white text-black font-semibold shadow-lg">
+                Start Over
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // Constants & State
+        const REQUIRED_IMAGES = 20;
+        const TIME_PER_SLIDE = 20000; // 20 seconds
+        let images = []; // Array of object URLs
+        let presentationTimeout = null;
+        let currentSlideIndex = 0;
+
+        // DOM Elements
+        const fileInput = document.getElementById('file-input');
+        const dropzone = document.getElementById('dropzone');
+        const emptyState = document.getElementById('empty-state');
+        const thumbnailGrid = document.getElementById('thumbnail-grid');
+        const countDisplay = document.getElementById('count-display');
+        const statusMessage = document.getElementById('status-message');
+        const btnStart = document.getElementById('btn-start');
+        const btnClear = document.getElementById('btn-clear');
+        
+        // Views
+        const views = {
+            setup: document.getElementById('view-setup'),
+            countdown: document.getElementById('view-countdown'),
+            presentation: document.getElementById('view-presentation'),
+            done: document.getElementById('view-done')
+        };
+
+        function switchView(targetViewId) {
+            Object.values(views).forEach(view => view.classList.remove('active'));
+            views[targetViewId].classList.add('active');
+        }
+
+        function handleFiles(filesArray) {
+            const imageFiles = filesArray.filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length !== filesArray.length) {
+                showStatus('Some files were ignored (not images)', true);
+            }
+
+            // Calculate how many we can add
+            const spaceLeft = REQUIRED_IMAGES - images.length;
+            const filesToAdd = imageFiles.slice(0, spaceLeft);
+
+            if (filesToAdd.length > 0) {
+                // Create object URLs for efficient memory usage and instant rendering
+                const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
+                images = [...images, ...newUrls];
+                updateSetupUI();
+            }
+
+            if (images.length === REQUIRED_IMAGES) {
+                showStatus('Ready to present.', false);
+            } else if (images.length > 0) {
+                showStatus(`Need ${REQUIRED_IMAGES - images.length} more images.`, false);
+            }
+        }
+
+        function updateSetupUI() {
+            // Update counter
+            countDisplay.innerText = images.length;
+            
+            // Toggle Start Button
+            if (images.length === REQUIRED_IMAGES) {
+                btnStart.disabled = false;
+                btnStart.classList.add('scale-105'); // Subtle physical nudge
+                setTimeout(() => btnStart.classList.remove('scale-105'), 200);
+            } else {
+                btnStart.disabled = true;
+            }
+
+            // Toggle Clear Button
+            if (images.length > 0) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+            }
+
+            // Render Thumbnails
+            if (images.length > 0) {
+                emptyState.style.opacity = '0';
+                thumbnailGrid.style.opacity = '1';
+                thumbnailGrid.style.pointerEvents = 'auto';
+                
+                thumbnailGrid.innerHTML = '';
+                images.forEach((src, index) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'relative aspect-square rounded-xl overflow-hidden bg-zinc-800 shadow-sm transition-transform duration-300 hover:scale-105';
+                    wrap.style.animation = `fade-in 0.3s ease-out ${index * 0.02}s backwards`;
+                    
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.className = 'w-full h-full object-cover';
+                    
+                    // Small delete badge
+                    const del = document.createElement('button');
+                    del.innerHTML = '&times;';
+                    del.className = 'absolute top-1 right-1 w-6 h-6 bg-black/60 backdrop-blur-md rounded-full text-white flex items-center justify-center text-xs opacity-0 hover:bg-black/90 transition-opacity duration-200 focus:opacity-100';
+                    wrap.addEventListener('mouseenter', () => del.style.opacity = '1');
+                    wrap.addEventListener('mouseleave', () => del.style.opacity = '0');
+                    
+                    del.onclick = (e) => {
+                        e.stopPropagation();
+                        removeImage(index);
+                    };
+
+                    wrap.appendChild(img);
+                    wrap.appendChild(del);
+                    thumbnailGrid.appendChild(wrap);
+                });
+            } else {
+                emptyState.style.opacity = '1';
+                thumbnailGrid.style.opacity = '0';
+                thumbnailGrid.style.pointerEvents = 'none';
+            }
+        }
+
+        function removeImage(index) {
+            URL.revokeObjectURL(images[index]); // Free memory
+            images.splice(index, 1);
+            updateSetupUI();
+            showStatus(`Need ${REQUIRED_IMAGES - images.length} more images.`, false);
+        }
+
+        function clearAll() {
+            images.forEach(url => URL.revokeObjectURL(url));
+            images = [];
+            updateSetupUI();
+            showStatus('Waiting for images...', false);
+        }
+
+        function showStatus(msg, isError) {
+            statusMessage.innerText = msg;
+            statusMessage.style.color = isError ? '#ef4444' : '#a1a1aa'; // red-500 or zinc-400
+            if (isError) {
+                // Shake effect for error
+                statusMessage.style.transform = 'translateX(-5px)';
+                setTimeout(() => statusMessage.style.transform = 'translateX(5px)', 50);
+                setTimeout(() => statusMessage.style.transform = 'translateX(0)', 100);
+            }
+        }
+
+        dropzone.addEventListener('click', () => {
+            // Prevent click if we already have 20
+            if (images.length < REQUIRED_IMAGES) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+            e.target.value = ''; // Reset input
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (images.length < REQUIRED_IMAGES) {
+                dropzone.classList.add('dragover');
+            }
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (images.length < REQUIRED_IMAGES) {
+                handleFiles(Array.from(e.dataTransfer.files));
+            }
+        });
+
+        btnClear.addEventListener('click', clearAll);
+
+        btnStart.addEventListener('click', () => {
+            if (images.length !== REQUIRED_IMAGES) return;
+            startCountdown();
+        });
+
+        function startCountdown() {
+            switchView('countdown');
+            const numEl = document.getElementById('countdown-number');
+            let count = 5;
+
+            function tick() {
+                numEl.innerText = count;
+                numEl.classList.remove('animate-countdown');
+                // Trigger reflow to restart CSS animation
+                void numEl.offsetWidth; 
+                numEl.classList.add('animate-countdown');
+
+                if (count > 0) {
+                    count--;
+                    setTimeout(tick, 1000);
+                } else {
+                    startPresentation();
+                }
+            }
+            
+            // Start the first tick
+            tick();
+        }
+
+        function startPresentation() {
+            switchView('presentation');
+            const container = document.getElementById('slide-container');
+            container.innerHTML = ''; // Clear old slides
+
+            // Pre-create all slide elements for frame-level smoothness during transitions
+            images.forEach((src, idx) => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = 'slide';
+                img.id = `slide-${idx}`;
+                container.appendChild(img);
+            });
+
+            currentSlideIndex = 0;
+            showSlide(currentSlideIndex);
+        }
+
+        function showSlide(index) {
+            // End of presentation
+            if (index >= REQUIRED_IMAGES) {
+                endPresentation();
+                return;
+            }
+
+            // Update UI
+            document.getElementById('pres-current').innerText = index + 1;
+
+            // Transition slides
+            const allSlides = document.querySelectorAll('.slide');
+            allSlides.forEach((slide, i) => {
+                if (i === index) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            // Schedule next slide
+            presentationTimeout = setTimeout(() => {
+                currentSlideIndex++;
+                showSlide(currentSlideIndex);
+            }, TIME_PER_SLIDE);
+        }
+
+        function endPresentation() {
+            clearTimeout(presentationTimeout);
+            switchView('done');
+        }
+
+        document.getElementById('btn-exit').addEventListener('click', () => {
+            clearTimeout(presentationTimeout);
+            switchView('setup'); // Return to setup on exit
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            clearAll();
+            switchView('setup');
+        });
+
+        // Small keyframe addition for thumbnail entrance
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fade-in {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>
