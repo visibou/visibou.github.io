@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privilea Voting Terminal</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23121210'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23E3121A'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23FFF1B8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="paper" data-screen="idle">
+
+  <!-- Paper grain + CRT layers sit above everything, never catch clicks -->
+  <div class="fx fx-grain" aria-hidden="true"></div>
+  <div class="fx fx-scanlines" aria-hidden="true"></div>
+  <div class="fx fx-vignette" aria-hidden="true"></div>
+  <div class="fx fx-flash" aria-hidden="true"></div>
+
+  <!-- RGB-shift: splits the screen into its red/green/blue channels and slides
+       them apart. The offsets are driven from app.js (RGB driver). -->
+  <svg class="fx-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="rgbShift" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+      <feOffset in="r" id="rgbR" dx="0" dy="0" result="ro"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+      <feOffset in="g" id="rgbG" dx="0" dy="0" result="go"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+      <feOffset in="b" id="rgbB" dx="0" dy="0" result="bo"/>
+      <feBlend in="ro" in2="go" mode="screen" result="rg"/>
+      <feBlend in="rg" in2="bo" mode="screen"/>
+    </filter>
+  </svg>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-name">PRIVILEA</span>
+      <span class="brand-tag">LOOKING OUT FOR YOU!</span>
+    </div>
+    <div class="topbar-mid mono" id="terminalLabel"></div>
+    <div class="topbar-right mono">
+      <span class="live"><i class="live-dot"></i><span id="beingStatus"></span></span>
+      <span id="clock">00:00:00</span>
+      <button class="icon-btn" id="muteBtn" type="button" aria-label="Toggle sound" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="stage">
+
+    <!-- ============ 1. IDLE / ID ENTRY ============ -->
+    <section class="screen screen-idle is-active" data-screen="idle" aria-labelledby="idleTitle">
+      <div class="idle-eye">
+        <div class="eye-slot" data-eye="idle"></div>
+        <p class="eye-caption mono"><span id="idleBeingName"></span> IS WATCHING</p>
+      </div>
+
+      <div class="idle-panel">
+        <p class="kicker mono" id="idleKicker"></p>
+        <h1 class="display" id="idleTitle">IDENTIFY<br>YOURSELF,<br><span class="red">CITIZEN.</span></h1>
+        <p class="lede">Enter the <strong>Citizen ID</strong> printed on your card, on the keypad or the keyboard. <span id="idleBeingName2"></span> will calculate the value of your voice.</p>
+
+        <form class="id-form" id="idForm" autocomplete="off">
+          <div class="id-entry">
+          <p class="mono field-label" id="idLabel">CITIZEN ID Nº</p>
+          <div class="id-boxes" id="idBoxes" role="status" aria-labelledby="idLabel"></div>
+          <p class="id-error mono" id="idError" role="alert" aria-live="assertive"></p>
+
+          <button type="submit" class="btn-primary" id="idSubmit">
+            <span>SUBMIT FOR ASSESSMENT</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          </button>
+          </div>
+          <div class="keypad" id="keypad">
+            <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+            <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+            <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+            <button type="button" data-key="clear" class="k-alt" aria-label="Clear">CLR</button>
+            <button type="button" data-key="0">0</button>
+            <button type="button" data-key="back" class="k-alt" aria-label="Delete last digit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z"/><path d="M12 9l5 6M17 9l-5 6"/></svg>
+            </button>
+          </div>
+        </form>
+        <p class="fineprint mono">BY ENTERING AN ID YOU CONSENT TO TOTAL OBSERVATION. YOUR DATA IS SAFE WITH US.</p>
+      </div>
+    </section>
+
+    <!-- ============ 2. PRIVILEGE CALCULATION ============ -->
+    <section class="screen screen-scan" data-screen="scan" aria-label="Privilege assessment">
+      <div class="scan-head mono">
+        <i class="live-dot"></i>
+        <span>PRIVILEGE ASSESSMENT IN PROGRESS — DO NOT LOOK AWAY</span>
+        <span class="scan-head-right"><span id="scanTimer">T+00:00.00</span><span id="scanPct">000%</span></span>
+      </div>
+
+      <div class="scan-grid">
+        <!-- Dossier -->
+        <aside class="panel dossier">
+          <div class="panel-title mono"><span>SUBJECT</span><span id="dossierLock" class="status">SEARCHING</span></div>
+          <div class="photo">
+            <div class="photo-img" id="dossierPhoto"></div>
+            <div class="photo-brackets" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="photo-scan" aria-hidden="true"></div>
+            <div class="photo-grid" aria-hidden="true"></div>
+          </div>
+          <dl class="dossier-fields mono" id="dossierFields"></dl>
+        </aside>
+
+        <!-- Factors -->
+        <div class="panel factors">
+          <div class="panel-title mono"><span>PRIVILEGE FACTORS</span><span>CONTRIBUTION</span></div>
+          <ol class="factor-list" id="factorList"></ol>
+        </div>
+
+        <!-- Index + console -->
+        <aside class="panel meter">
+          <div class="eye-slot eye-small" data-eye="scan"></div>
+          <div class="index-readout">
+            <span class="mono index-label">PRIVILEGE INDEX</span>
+            <span class="index-value" id="indexValue">00.0</span>
+            <span class="mono index-scale">/ 100</span>
+          </div>
+          <div class="gauge" aria-hidden="true">
+            <svg viewBox="0 0 200 110">
+              <path class="gauge-track" d="M15 100 A85 85 0 0 1 185 100"/>
+              <path class="gauge-fill" id="gaugeFill" d="M15 100 A85 85 0 0 1 185 100"/>
+              <g class="gauge-ticks" id="gaugeTicks"></g>
+            </svg>
+          </div>
+          <div class="console mono" id="console" aria-hidden="true"></div>
+        </aside>
+      </div>
+
+      <div class="scan-progress" aria-hidden="true"><i id="scanBar"></i></div>
+
+      <!-- Final "consulting" overlay -->
+      <div class="consult" id="consult" aria-live="polite">
+        <div class="consult-eye eye-slot" data-eye="consult"></div>
+        <p class="consult-text mono" id="consultText"></p>
+      </div>
+    </section>
+
+    <!-- ============ 3. VOTE WEIGHT ALARM ============ -->
+    <section class="screen screen-alarm" data-screen="alarm" aria-labelledby="alarmTitle">
+      <div class="hazard hazard-top" aria-hidden="true"></div>
+      <div class="beacon" aria-hidden="true"></div>
+      <div class="alarm-body">
+        <p class="alarm-kicker mono">
+          <svg class="warn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L1.5 21h21z"/><path class="warn-mark" d="M12 9.5v5.5M12 17.6v.4"/></svg>
+          <span id="alarmTitle">ATTENTION — VOTE WEIGHT ASSIGNED</span>
+          <svg class="warn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L1.5 21h21z"/><path class="warn-mark" d="M12 9.5v5.5M12 17.6v.4"/></svg>
+        </p>
+        <p class="alarm-name display" id="alarmName"></p>
+        <div class="alarm-number">
+          <span class="alarm-x">×</span><span id="alarmWeight">0.00</span>
+        </div>
+        <p class="alarm-sub" id="alarmSub"></p>
+        <div class="alarm-meta">
+          <span class="stamp" id="alarmTier"></span>
+          <span class="mono" id="alarmIndex"></span>
+        </div>
+        <button type="button" class="btn-primary btn-alarm" id="alarmNext">
+          <span>PROCEED TO BALLOT</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="mono alarm-auto" id="alarmAuto"></p>
+      </div>
+      <div class="hazard hazard-bottom" aria-hidden="true"></div>
+    </section>
+
+    <!-- ============ 4. BALLOT ============ -->
+    <section class="screen screen-ballot" data-screen="ballot" aria-labelledby="questionText">
+      <div class="ballot-head">
+        <div class="citizen-chip">
+          <div class="chip-photo" id="chipPhoto"></div>
+          <div>
+            <p class="mono chip-label">VOTING AS</p>
+            <p class="chip-name" id="chipName"></p>
+          </div>
+        </div>
+        <div class="weight-badge">
+          <span class="mono">VOTE WEIGHT</span>
+          <strong id="chipWeight">×0.00</strong>
+        </div>
+      </div>
+
+      <div class="ballot-progress">
+        <span class="mono" id="qCounter">QUESTION 01 / 03</span>
+        <div class="segments" id="qSegments"></div>
+        <span class="mono ballot-hint">TAP AN OPTION OR PRESS <kbd>Y</kbd> / <kbd>N</kbd></span>
+      </div>
+
+      <div class="question-wrap" id="questionWrap">
+        <h2 class="question display" id="questionText"></h2>
+        <div class="options">
+          <button type="button" class="option" data-choice="a">
+            <span class="opt-key">Y</span><span class="opt-text" id="optA"></span>
+            <span class="opt-stamp" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="option" data-choice="b">
+            <span class="opt-key">N</span><span class="opt-text" id="optB"></span>
+            <span class="opt-stamp" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+      <p class="fineprint mono">YOUR VOTE IS <span class="red">VERY IMPORTANT</span>. VOTING GIVES US THE DATA WE NEED.</p>
+    </section>
+
+    <!-- ============ 5. THANK YOU ============ -->
+    <section class="screen screen-thanks" data-screen="thanks" aria-labelledby="thanksTitle">
+      <div class="thanks-sticker">
+        <img src="assets/sticker.png" alt="Just voted! sticker" id="sticker" draggable="false">
+      </div>
+      <div class="thanks-panel">
+        <p class="kicker mono">BALLOT TRANSMITTED</p>
+        <h2 class="display" id="thanksTitle">THANK YOU,<br><span class="red">CITIZEN.</span></h2>
+        <p class="lede" id="thanksText"></p>
+        <p class="lede strong">Please return the ID card to the attendant.</p>
+        <div class="reset">
+          <div class="reset-bar"><i id="resetBar"></i></div>
+          <p class="mono" id="resetText"></p>
+        </div>
+        <p class="brand-sign"><span class="brand-name">PRIVILEA</span><span class="brand-tag">LOOKING OUT FOR YOU!</span></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </footer>
+
+  <!-- Operator panel: Ctrl+Alt+O, or enter the operator ID -->
+  <div class="admin" id="admin" hidden>
+    <div class="admin-box">
+      <div class="admin-head">
+        <h3>OPERATOR PANEL</h3>
+        <button type="button" class="admin-close" id="adminClose" aria-label="Close">×</button>
+      </div>
+      <div id="adminBody"></div>
+      <div class="admin-actions">
+        <button type="button" id="adminExport">EXPORT JSON</button>
+        <button type="button" id="adminFull">FULLSCREEN</button>
+        <button type="button" id="adminClear" class="danger">CLEAR ALL VOTES</button>
+      </div>
+      <p class="admin-help">Shortcuts: <b>Ctrl+Alt+O</b> or the operator ID this panel · <b>F</b> fullscreen (on start screen) · <b>M</b> sound · <b>Esc</b> back to start</p>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
